@@ -1,0 +1,1 @@
+On initial load, check localStorage for the user's theme preference and apply the 'dark' class to the root element if dark mode is preferred.

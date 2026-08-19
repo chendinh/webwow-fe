@@ -1,0 +1,1 @@
+Add a button to toggle dark mode. This button will update the state and trigger a function to add or remove the 'dark' class on the root element.
