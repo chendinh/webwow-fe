@@ -1,0 +1,56 @@
+:root {
+  --font-family: 'Arial', sans-serif;
+  --transition-duration: 0.3s;
+}
+
+body {
+  font-family: var(--font-family);
+  transition: background-color var(--transition-duration), color var(--transition-duration);
+}
+
+.dark-mode {
+  --background-color: #121212;
+  --text-color: #ffffff;
+  --primary-color: #bb86fc;
+  --secondary-color: #03dac6;
+}
+
+.light-mode {
+  --background-color: #ffffff;
+  --text-color: #000000;
+  --primary-color: #6200ee;
+  --secondary-color: #018786;
+}
+
+body.dark-mode {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+body.light-mode {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color var(--transition-duration);
+}
+
+a:hover {
+  color: var(--secondary-color);
+}
+
+button {
+  background-color: var(--primary-color);
+  color: var(--text-color);
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color var(--transition-duration);
+}
+
+button:hover {
+  background-color: var(--secondary-color);
+}
