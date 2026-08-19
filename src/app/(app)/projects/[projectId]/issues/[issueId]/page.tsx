@@ -1,21 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, DollarSign, CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react'
+import {
+  ArrowLeft, DollarSign, CheckCircle2, Circle, Loader2,
+  AlertTriangle, GitPullRequest, XCircle, Zap,
+} from 'lucide-react'
 import { issuesApi, Issue } from '@/lib/api/issues.api'
+import { aiTasksApi, AITask } from '@/lib/api/ai-tasks.api'
 import { approvalsApi } from '@/lib/api/approvals.api'
 import { useOrgStore } from '@/stores/org.store'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
+
 const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Open',
   ANALYZING: 'Analyzing',
   PLAN_READY: 'Plan Ready',
   APPROVED: 'Approved',
   IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Done',
   DONE: 'Done',
+  FAILED: 'Failed',
   REJECTED: 'Rejected',
 }
 
@@ -25,25 +32,20 @@ const STATUS_COLOR: Record<string, string> = {
   PLAN_READY: 'text-amber-300 bg-amber-500/10',
   APPROVED: 'text-emerald-300 bg-emerald-500/10',
   IN_PROGRESS: 'text-violet-300 bg-violet-500/10',
+  COMPLETED: 'text-emerald-400 bg-emerald-500/10',
   DONE: 'text-emerald-400 bg-emerald-500/10',
+  FAILED: 'text-red-400 bg-red-500/10',
   REJECTED: 'text-red-400 bg-red-500/10',
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  BUG: 'Bug',
-  FEATURE: 'Feature',
-  REFACTOR: 'Refactor',
-  PERFORMANCE: 'Performance',
-  SECURITY: 'Security',
-  DEPENDENCY: 'Dependency',
-  OTHER: 'Other',
+  BUG: 'Bug', FEATURE: 'Feature', REFACTOR: 'Refactor',
+  PERFORMANCE: 'Performance', SECURITY: 'Security',
+  DEPENDENCY: 'Dependency', OTHER: 'Other',
 }
 
 const PRIORITY_LABELS: Record<string, string> = {
-  CRITICAL: 'Critical',
-  HIGH: 'High',
-  MEDIUM: 'Medium',
-  LOW: 'Low',
+  CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
 }
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -53,27 +55,67 @@ const PRIORITY_COLOR: Record<string, string> = {
   LOW: 'text-gray-400 bg-white/5',
 }
 
-const TIMELINE_STEPS = [
-  { status: 'OPEN', label: 'Issue created' },
+// Issue-level timeline steps
+const ISSUE_TIMELINE = [
+  { status: 'OPEN',      label: 'Issue created' },
   { status: 'ANALYZING', label: 'AI analyzing' },
   { status: 'PLAN_READY', label: 'Plan ready' },
-  { status: 'APPROVED', label: 'Approved' },
-  { status: 'IN_PROGRESS', label: 'In progress' },
-  { status: 'DONE', label: 'Done' },
+  { status: 'APPROVED',  label: 'Approved' },
+  { status: 'IN_PROGRESS', label: 'Coding in progress' },
+  { status: 'COMPLETED', label: 'Done' },
 ]
 
-const STATUS_ORDER = ['OPEN', 'ANALYZING', 'PLAN_READY', 'APPROVED', 'IN_PROGRESS', 'DONE']
+const ISSUE_STATUS_ORDER = ['OPEN', 'ANALYZING', 'PLAN_READY', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'DONE']
 
-function getStepState(stepStatus: string, currentStatus: string) {
-  const si = STATUS_ORDER.indexOf(stepStatus)
-  const ci = STATUS_ORDER.indexOf(currentStatus)
-  if (currentStatus === 'REJECTED') return si === 0 ? 'done' : 'inactive'
+// AITask sub-steps shown when coding is in progress
+const TASK_STEPS: Array<{ status: string; label: string }> = [
+  { status: 'QUEUED',       label: 'Queued' },
+  { status: 'PREPARING',    label: 'Setting up sandbox' },
+  { status: 'CODING',       label: 'Writing code' },
+  { status: 'TESTING',      label: 'Running tests & build' },
+  { status: 'FIXING',       label: 'Fixing errors' },
+  { status: 'REVIEWING',    label: 'Reviewing changes' },
+  { status: 'CREATING_PR',  label: 'Creating pull request' },
+  { status: 'COMPLETED',    label: 'Completed' },
+]
+
+const TASK_STATUS_ORDER = ['QUEUED', 'PREPARING', 'CODING', 'TESTING', 'FIXING', 'REVIEWING', 'CREATING_PR', 'COMPLETED']
+
+// Statuses that require active polling
+const ACTIVE_ISSUE_STATUSES = ['ANALYZING', 'OPEN', 'APPROVED', 'IN_PROGRESS']
+const ACTIVE_TASK_STATUSES = ['QUEUED', 'PREPARING', 'CODING', 'TESTING', 'FIXING', 'REVIEWING', 'CREATING_PR']
+
+function getIssueStepState(stepStatus: string, currentStatus: string): 'done' | 'active' | 'inactive' {
+  const si = ISSUE_STATUS_ORDER.indexOf(stepStatus)
+  const ci = ISSUE_STATUS_ORDER.indexOf(currentStatus)
+  if (['REJECTED', 'FAILED'].includes(currentStatus)) return si === 0 ? 'done' : 'inactive'
   if (si < ci) return 'done'
   if (si === ci) return 'active'
   return 'inactive'
 }
 
+function getTaskStepState(stepStatus: string, currentStatus: string): 'done' | 'active' | 'inactive' {
+  const si = TASK_STATUS_ORDER.indexOf(stepStatus)
+  const ci = TASK_STATUS_ORDER.indexOf(currentStatus)
+  if (currentStatus === 'FAILED') return 'inactive'
+  if (si < ci) return 'done'
+  if (si === ci) return 'active'
+  return 'inactive'
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StepIcon({ state, spinning }: { state: 'done' | 'active' | 'inactive'; spinning?: boolean }) {
+  if (state === 'done') return <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-400" />
+  if (state === 'active') {
+    if (spinning) return <Loader2 className="h-4 w-4 flex-shrink-0 text-sky-400 animate-spin" />
+    return <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-sky-400" />
+  }
+  return <Circle className="h-4 w-4 flex-shrink-0 text-gray-700" />
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function IssueDetailPage({
   params,
 }: {
@@ -81,7 +123,9 @@ export default function IssueDetailPage({
 }) {
   const router = useRouter()
   const activeOrgId = useOrgStore((s) => s.activeOrgId)
+
   const [issue, setIssue] = useState<Issue | null>(null)
+  const [activeTask, setActiveTask] = useState<AITask | null>(null)
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState(false)
   const [rejecting, setRejecting] = useState(false)
@@ -89,36 +133,79 @@ export default function IssueDetailPage({
   const [showRejectForm, setShowRejectForm] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const fetchIssue = async () => {
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ── Fetch both issue + its latest AITask ────────────────────────────────────
+
+  const fetchData = useCallback(async () => {
     if (!activeOrgId) return
     try {
-      const res = await issuesApi.getById(params.projectId, params.issueId, activeOrgId)
-      setIssue(res.data as Issue)
+      const [issueRes, tasksRes] = await Promise.allSettled([
+        issuesApi.getById(params.projectId, params.issueId, activeOrgId),
+        aiTasksApi.list(activeOrgId, params.projectId),
+      ])
+
+      if (issueRes.status === 'fulfilled') {
+        setIssue(issueRes.value.data as Issue)
+      }
+
+      if (tasksRes.status === 'fulfilled') {
+        const tasks = (tasksRes.value.data as AITask[]) ?? []
+        // Find the latest task for this issue
+        const issueTasks = tasks
+          .filter(t => t.issueId === params.issueId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        setActiveTask(issueTasks[0] ?? null)
+      }
     } catch (e) {
-      console.error('Failed to fetch issue', e)
+      console.error('Failed to fetch issue data', e)
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeOrgId, params.projectId, params.issueId])
+
+  // ── Initial load ────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!activeOrgId) { setLoading(false); return }
-    fetchIssue()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrgId, params.issueId])
+    fetchData()
+  }, [activeOrgId, params.issueId, fetchData])
 
-  // Poll while AI is working so the page updates automatically when the plan is ready
+  // ── Smart polling: runs when issue OR task is in an active state ────────────
+
   useEffect(() => {
-    const POLLING_STATUSES = ['ANALYZING', 'OPEN']
-    if (!issue || !POLLING_STATUSES.includes(issue.status)) return
+    const issueActive = issue && ACTIVE_ISSUE_STATUSES.includes(issue.status)
+    const taskActive = activeTask && ACTIVE_TASK_STATUSES.includes(activeTask.status)
 
-    const interval = setInterval(() => {
-      fetchIssue()
-    }, 3000)
+    if (!issueActive && !taskActive) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+      return
+    }
 
-    return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [issue?.status])
+    if (pollingRef.current) return // already polling
+
+    pollingRef.current = setInterval(fetchData, 3000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [issue?.status, activeTask?.status, fetchData])
+
+  // ── Cleanup on unmount ──────────────────────────────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [])
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
 
   const handleApprove = async () => {
     if (!activeOrgId || !issue) return
@@ -126,7 +213,7 @@ export default function IssueDetailPage({
     setActionError(null)
     try {
       await approvalsApi.approve(issue.id, activeOrgId)
-      await fetchIssue()
+      await fetchData()
     } catch (err: unknown) {
       setActionError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Approval failed.'
@@ -151,6 +238,8 @@ export default function IssueDetailPage({
     }
   }
 
+  // ── Loading / error states ──────────────────────────────────────────────────
+
   if (!activeOrgId || loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -164,21 +253,23 @@ export default function IssueDetailPage({
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertTriangle className="h-12 w-12 text-gray-700" />
         <p className="mt-3 text-sm text-gray-500">Issue not found.</p>
-        <Link
-          href={`/projects/${params.projectId}/issues`}
-          className="mt-3 text-sm text-sky-400 hover:text-sky-300 transition-colors"
-        >
+        <Link href={`/projects/${params.projectId}/issues`} className="mt-3 text-sm text-sky-400 hover:text-sky-300 transition-colors">
           ← Back to issues
         </Link>
       </div>
     )
   }
 
+  const isCodingActive = activeTask && ACTIVE_TASK_STATUSES.includes(activeTask.status)
+  const isPRCreated = activeTask?.status === 'COMPLETED' || (activeTask?.status === 'CREATING_PR')
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-0">
-
       <div className="p-6">
         <div className="mx-auto max-w-5xl space-y-6">
+
           {/* Back + status */}
           <div className="flex items-center justify-between">
             <Link
@@ -188,17 +279,17 @@ export default function IssueDetailPage({
               <ArrowLeft className="h-4 w-4" />
               Back to issues
             </Link>
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLOR[issue.status] ?? 'text-gray-500 bg-white/5'}`}
-            >
+            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLOR[issue.status] ?? 'text-gray-500 bg-white/5'}`}>
               {STATUS_LABELS[issue.status] ?? issue.status}
             </span>
           </div>
 
           {/* Two-column layout */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Main column */}
+
+            {/* ── Main column ── */}
             <div className="space-y-5 lg:col-span-2">
+
               {/* Title + meta */}
               <div className="rounded-xl border border-white/5 bg-gray-900 p-6">
                 <h1 className="text-xl font-bold text-white">{issue.title}</h1>
@@ -213,21 +304,106 @@ export default function IssueDetailPage({
                     Created {new Date(issue.createdAt).toLocaleDateString('en-US')}
                   </span>
                 </div>
-
                 <div className="mt-5 border-t border-white/5 pt-5">
-                  <p className="text-sm/7 text-gray-300 whitespace-pre-wrap">
-                    {issue.description}
-                  </p>
+                  <p className="text-sm/7 text-gray-300 whitespace-pre-wrap">{issue.description}</p>
                 </div>
               </div>
+
+              {/* Live coding progress — shown when task is active */}
+              {activeTask && (
+                <div className={`rounded-xl border p-6 ${
+                  activeTask.status === 'FAILED'
+                    ? 'border-red-500/20 bg-red-500/5'
+                    : activeTask.status === 'COMPLETED'
+                    ? 'border-emerald-500/20 bg-emerald-500/5'
+                    : 'border-violet-500/20 bg-violet-500/5'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {isCodingActive ? (
+                        <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
+                      ) : activeTask.status === 'COMPLETED' ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-400" />
+                      )}
+                      <h2 className={`text-sm font-semibold ${
+                        activeTask.status === 'FAILED' ? 'text-red-300'
+                        : activeTask.status === 'COMPLETED' ? 'text-emerald-300'
+                        : 'text-violet-300'
+                      }`}>
+                        {activeTask.status === 'COMPLETED' ? 'AI Coding Complete'
+                          : activeTask.status === 'FAILED' ? 'Coding Failed'
+                          : 'AI Coding in Progress'}
+                      </h2>
+                    </div>
+                    {activeTask.currentStep && isCodingActive && (
+                      <span className="text-xs text-gray-500 italic">{activeTask.currentStep}</span>
+                    )}
+                  </div>
+
+                  {/* Task sub-steps */}
+                  <ol className="mt-4 space-y-2">
+                    {TASK_STEPS.map(({ status, label }) => {
+                      const state = getTaskStepState(status, activeTask.status)
+                      const isCurrentlyActive = state === 'active'
+                      return (
+                        <li key={status} className="flex items-center gap-3">
+                          <StepIcon state={state} spinning={isCurrentlyActive} />
+                          <span className={`text-sm ${
+                            isCurrentlyActive ? 'font-medium text-sky-300'
+                            : state === 'done' ? 'text-gray-300'
+                            : 'text-gray-700'
+                          }`}>
+                            {label}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ol>
+
+                  {/* PR link */}
+                  {activeTask.status === 'COMPLETED' && (
+                    <div className="mt-4 border-t border-white/5 pt-4 flex items-center gap-2">
+                      <GitPullRequest className="h-4 w-4 text-emerald-400" />
+                      <span className="text-sm text-gray-400">Pull request created successfully</span>
+                      <Link
+                        href={`/projects/${params.projectId}/pull-requests`}
+                        className="ml-auto text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                      >
+                        View PR →
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Failure reason */}
+                  {activeTask.status === 'FAILED' && activeTask.failureReason && (
+                    <div className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                      {activeTask.failureReason}
+                    </div>
+                  )}
+
+                  {/* Files changed */}
+                  {activeTask.filesChanged && activeTask.filesChanged.length > 0 && (
+                    <div className="mt-4 border-t border-white/5 pt-4">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">
+                        {activeTask.filesChanged.length} file{activeTask.filesChanged.length !== 1 ? 's' : ''} changed
+                      </p>
+                      <ul className="space-y-1">
+                        {activeTask.filesChanged.map(f => (
+                          <li key={f} className="font-mono text-xs text-sky-400/80">{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* AI Diagnosis */}
               {issue.aiDiagnosis && (
                 <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-6">
                   <h2 className="text-sm font-semibold text-sky-300">AI Analysis</h2>
-                  <p className="mt-3 text-sm/7 text-gray-300 whitespace-pre-wrap">
-                    {issue.aiDiagnosis}
-                  </p>
+                  <p className="mt-3 text-sm/7 text-gray-300 whitespace-pre-wrap">{issue.aiDiagnosis}</p>
                 </div>
               )}
 
@@ -244,18 +420,15 @@ export default function IssueDetailPage({
                           testsToWrite?: string[]
                           complexityLevel?: string
                           estimatedMinutes?: number
-                          rollbackStrategy?: string
                         }
                     return (
                       <div className="mt-4 space-y-4">
-                        {plan.summary && (
-                          <p className="text-sm/7 text-gray-300">{plan.summary}</p>
-                        )}
+                        {plan.summary && <p className="text-sm/7 text-gray-300">{plan.summary}</p>}
                         {plan.steps && plan.steps.length > 0 && (
                           <div>
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-400 mb-2">Steps</h3>
                             <ol className="space-y-3">
-                              {plan.steps.map((step: { order: number; type: string; filePath: string; description: string; testRequired?: boolean }) => (
+                              {plan.steps.map((step: { order: number; type: string; filePath: string; description: string }) => (
                                 <li key={step.order} className="flex gap-3">
                                   <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold text-violet-300">
                                     {step.order}
@@ -315,20 +488,17 @@ export default function IssueDetailPage({
               ) : null}
             </div>
 
-            {/* Sidebar */}
+            {/* ── Sidebar ── */}
             <div className="space-y-4">
+
               {/* Approval panel */}
               {issue.status === 'PLAN_READY' && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
                   <h2 className="text-sm font-semibold text-amber-300">Approve Plan</h2>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Review the AI plan above, then approve to start coding.
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">Review the AI plan, then approve to start coding.</p>
 
                   {actionError && (
-                    <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
-                      {actionError}
-                    </p>
+                    <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">{actionError}</p>
                   )}
 
                   <div className="mt-4 space-y-2">
@@ -339,11 +509,7 @@ export default function IssueDetailPage({
                           disabled={approving}
                           className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-60 transition-colors"
                         >
-                          {approving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4" />
-                          )}
+                          {approving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                           Approve & Start Coding
                         </button>
                         <button
@@ -393,25 +559,19 @@ export default function IssueDetailPage({
                     {issue.estimatedTokens != null && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Tokens</span>
-                        <span className="font-medium text-gray-200">
-                          ~{issue.estimatedTokens.toLocaleString()}
-                        </span>
+                        <span className="font-medium text-gray-200">~{issue.estimatedTokens.toLocaleString()}</span>
                       </div>
                     )}
                     {issue.estimatedMinutes != null && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Est. time</span>
-                        <span className="font-medium text-gray-200">
-                          ~{issue.estimatedMinutes} min
-                        </span>
+                        <span className="font-medium text-gray-200">~{issue.estimatedMinutes} min</span>
                       </div>
                     )}
                     {issue.estimatedCost != null && (
                       <div className="flex justify-between border-t border-white/5 pt-2 text-sm font-semibold">
                         <span className="text-gray-300">Total</span>
-                        <span className="text-emerald-400">
-                          ${issue.estimatedCost.toFixed(4)}
-                        </span>
+                        <span className="text-emerald-400">${issue.estimatedCost.toFixed(4)}</span>
                       </div>
                     )}
                   </div>
@@ -420,36 +580,65 @@ export default function IssueDetailPage({
 
               {/* Progress timeline */}
               <div className="rounded-xl border border-white/5 bg-gray-900 p-5">
-                <h2 className="text-sm font-semibold text-gray-100">Progress</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-gray-100">Progress</h2>
+                  {ACTIVE_ISSUE_STATUSES.includes(issue.status) && (
+                    <span className="flex items-center gap-1 text-xs text-sky-400">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sky-400" />
+                      </span>
+                      Live
+                    </span>
+                  )}
+                </div>
+
+                {/* Issue-level steps */}
                 <ol className="mt-4 space-y-3">
-                  {TIMELINE_STEPS.map(({ status, label }) => {
-                    const state = getStepState(status, issue.status)
+                  {ISSUE_TIMELINE.map(({ status, label }) => {
+                    const state = getIssueStepState(status, issue.status)
+                    const isActive = state === 'active'
+                    const isCodingStep = status === 'IN_PROGRESS'
                     return (
-                      <li key={status} className="flex items-center gap-3">
-                        {state === 'done' ? (
-                          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-400" />
-                        ) : state === 'active' ? (
-                          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-sky-400" />
-                        ) : (
-                          <Circle className="h-4 w-4 flex-shrink-0 text-gray-700" />
+                      <li key={status}>
+                        <div className="flex items-center gap-3">
+                          <StepIcon state={state} spinning={isActive && !isCodingStep} />
+                          <span className={`text-sm ${
+                            isActive ? 'font-medium text-sky-300'
+                            : state === 'done' ? 'text-gray-300'
+                            : 'text-gray-700'
+                          }`}>
+                            {label}
+                          </span>
+                        </div>
+
+                        {/* Inline task sub-steps under "Coding in progress" */}
+                        {isCodingStep && activeTask && (state === 'active' || state === 'done') && (
+                          <ol className="mt-2 ml-7 space-y-2 border-l border-white/5 pl-4">
+                            {TASK_STEPS.map(({ status: ts, label: tl }) => {
+                              const tState = getTaskStepState(ts, activeTask.status)
+                              return (
+                                <li key={ts} className="flex items-center gap-2">
+                                  <StepIcon state={tState} spinning={tState === 'active'} />
+                                  <span className={`text-xs ${
+                                    tState === 'active' ? 'font-medium text-sky-300'
+                                    : tState === 'done' ? 'text-gray-400'
+                                    : 'text-gray-700'
+                                  }`}>
+                                    {tl}
+                                  </span>
+                                </li>
+                              )
+                            })}
+                          </ol>
                         )}
-                        <span
-                          className={`text-sm ${
-                            state === 'active'
-                              ? 'font-medium text-sky-300'
-                              : state === 'done'
-                              ? 'text-gray-300'
-                              : 'text-gray-700'
-                          }`}
-                        >
-                          {label}
-                        </span>
                       </li>
                     )
                   })}
+
                   {issue.status === 'REJECTED' && (
                     <li className="flex items-center gap-3">
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-red-400" />
+                      <XCircle className="h-4 w-4 flex-shrink-0 text-red-400" />
                       <span className="text-sm font-medium text-red-400">Rejected</span>
                     </li>
                   )}
