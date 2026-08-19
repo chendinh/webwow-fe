@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
-import { User, Building, Github } from "lucide-react";
+import { User, Building, Github, Key } from "lucide-react";
 
 interface SettingsTabsProps {
-  activeTab: "profile" | "organization" | "github";
+  activeTab: "profile" | "organization" | "github" | "tokens";
 }
 
 const tabs = [
   { key: "profile", label: "Hồ sơ", icon: User, path: "/settings/profile" },
   { key: "organization", label: "Tổ chức", icon: Building, path: "/settings/organization" },
   { key: "github", label: "GitHub", icon: Github, path: "/settings/github" },
+  { key: "tokens", label: "API Tokens", icon: Key, path: "/settings/tokens" },
 ] as const;
 
 export function SettingsTabs({ activeTab }: SettingsTabsProps) {

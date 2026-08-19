@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   FolderGit2,
@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  MessageSquare,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils/cn'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/consult', label: 'Quick Request', icon: MessageSquare },
   { href: '/projects', label: 'Projects', icon: FolderGit2 },
   { href: '/usage', label: 'Usage', icon: BarChart2 },
   { href: '/settings', label: 'Settings', icon: Settings },

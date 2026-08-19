@@ -29,4 +29,7 @@ export const authApi = {
 
   resetPassword: (token: string, password: string) =>
     apiClient.post("/api/auth/reset-password", { token, password }),
+
+  tokenLogin: (token: string) =>
+    apiClient.post<LoginResponse>("/api/auth/token-login", { token }),
 };

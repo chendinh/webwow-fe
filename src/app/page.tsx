@@ -17,6 +17,7 @@ import { redirect } from 'next/navigation'
 import { StarField } from '@/components/marketing/StarField'
 import { Glow } from '@/components/marketing/Glow'
 import { EmailSignupForm } from '@/components/marketing/EmailSignupForm'
+import { TokenLoginForm } from '@/components/marketing/TokenLoginForm'
 import { SparkleIcon } from '@/components/marketing/SparkleIcon'
 import { Github, Twitter, BookOpen, ArrowRight } from 'lucide-react'
 
@@ -222,6 +223,11 @@ export default function LandingPage() {
 
                 {/* Email signup */}
                 <EmailSignupForm />
+
+                {/* Token login */}
+                <div className="mt-6 border-t border-white/10 pt-6">
+                  <TokenLoginForm />
+                </div>
 
                 {/* Social links */}
                 <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">

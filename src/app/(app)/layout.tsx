@@ -8,12 +8,14 @@ import { useAuthStore } from '@/stores/auth.store'
 
 const ROUTE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/consult': 'Quick Request',
   '/projects': 'Projects',
   '/usage': 'Usage & Billing',
   '/settings': 'Settings',
   '/settings/profile': 'Profile',
   '/settings/organization': 'Organization',
   '/settings/github': 'GitHub',
+  '/settings/tokens': 'API Tokens',
 }
 
 function getTitle(pathname: string): string {

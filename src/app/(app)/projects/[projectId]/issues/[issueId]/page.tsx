@@ -107,6 +107,19 @@ export default function IssueDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOrgId, params.issueId])
 
+  // Poll while AI is working so the page updates automatically when the plan is ready
+  useEffect(() => {
+    const POLLING_STATUSES = ['ANALYZING', 'OPEN']
+    if (!issue || !POLLING_STATUSES.includes(issue.status)) return
+
+    const interval = setInterval(() => {
+      fetchIssue()
+    }, 3000)
+
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issue?.status])
+
   const handleApprove = async () => {
     if (!activeOrgId || !issue) return
     setApproving(true)
