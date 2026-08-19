@@ -2,57 +2,49 @@ import { apiClient } from "./client";
 
 export interface CreateIssueDto {
   title: string;
-  description?: string;
-  priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  type?: "BUG" | "FEATURE" | "TASK" | "IMPROVEMENT";
-  assigneeId?: string;
+  description: string;
+  type: "BUG" | "FEATURE" | "REFACTOR" | "PERFORMANCE" | "SECURITY" | "DEPENDENCY" | "OTHER";
+  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }
 
-export interface UpdateIssueDto extends Partial<CreateIssueDto> {
-  status?: "OPEN" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CLOSED";
+export interface Issue {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  priority: string;
+  status: string;
+  projectId: string;
+  organizationId: string;
+  createdById: string;
+  aiDiagnosis: string | null;
+  implementationPlan: string | null;
+  estimatedTokens: number | null;
+  estimatedCost: number | null;
+  estimatedMinutes: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const issuesApi = {
   create: (projectId: string, organizationId: string, data: CreateIssueDto) =>
-    apiClient.post(
+    apiClient.post<Issue>(
       `/api/api/projects/${projectId}/issues?organizationId=${organizationId}`,
       data
     ),
 
   list: (projectId: string, organizationId: string) =>
-    apiClient.get(
+    apiClient.get<Issue[]>(
       `/api/api/projects/${projectId}/issues?organizationId=${organizationId}`
     ),
 
   getById: (projectId: string, issueId: string, organizationId: string) =>
-    apiClient.get(
+    apiClient.get<Issue>(
       `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
-    ),
-
-  update: (
-    projectId: string,
-    issueId: string,
-    organizationId: string,
-    data: UpdateIssueDto
-  ) =>
-    apiClient.patch(
-      `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`,
-      data
     ),
 
   delete: (projectId: string, issueId: string, organizationId: string) =>
     apiClient.delete(
       `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
-    ),
-
-  addComment: (projectId: string, issueId: string, organizationId: string, content: string) =>
-    apiClient.post(
-      `/api/api/projects/${projectId}/issues/${issueId}/comments?organizationId=${organizationId}`,
-      { content }
-    ),
-
-  listComments: (projectId: string, issueId: string, organizationId: string) =>
-    apiClient.get(
-      `/api/api/projects/${projectId}/issues/${issueId}/comments?organizationId=${organizationId}`
     ),
 };

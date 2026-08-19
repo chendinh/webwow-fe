@@ -1,21 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Topbar } from "@/components/layout/topbar";
 import { SettingsTabs } from "@/components/layout/settings-tabs";
-import { User } from "lucide-react";
+import { Loader, CheckCircle } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
+import { apiClient } from "@/lib/api/client";
 
 export default function ProfileSettingsPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name ?? "");
+      setEmail(user.email ?? "");
+    }
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: call API
+    setSubmitting(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      const res = await apiClient.patch<{ id: string; email: string; name: string | null }>(
+        "/api/api/users/me",
+        { name: name.trim() || null }
+      );
+      setUser({ id: res.data.id, email: res.data.email, name: res.data.name });
+      setSuccess(true);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Cập nhật thất bại. Vui lòng thử lại.";
+      setError(Array.isArray(msg) ? (msg as string[]).join(", ") : (msg as string));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -27,8 +59,8 @@ export default function ProfileSettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold">
-                  U
+                <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold select-none">
+                  {(user?.name ?? user?.email ?? "U")[0].toUpperCase()}
                 </div>
                 <div>
                   <CardTitle>Thông tin cá nhân</CardTitle>
@@ -37,6 +69,17 @@ export default function ProfileSettingsPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {error && (
+                <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="mb-4 rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Đã lưu thay đổi thành công.
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="name">Họ và tên</Label>
@@ -52,13 +95,17 @@ export default function ProfileSettingsPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="email@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    disabled
+                    className="bg-gray-50 text-gray-500 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-400">Email không thể thay đổi.</p>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <Button type="submit">Lưu thay đổi</Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && <Loader className="h-4 w-4 mr-2 animate-spin" />}
+                    Lưu thay đổi
+                  </Button>
                 </div>
               </form>
             </CardContent>
@@ -76,7 +123,9 @@ export default function ProfileSettingsPage() {
                     Hành động này không thể hoàn tác. Tất cả dữ liệu sẽ bị xóa vĩnh viễn.
                   </p>
                 </div>
-                <Button variant="destructive" size="sm">Xóa tài khoản</Button>
+                <Button variant="destructive" size="sm" disabled>
+                  Xóa tài khoản
+                </Button>
               </div>
             </CardContent>
           </Card>

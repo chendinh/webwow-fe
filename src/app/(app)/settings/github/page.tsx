@@ -1,16 +1,52 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Topbar } from "@/components/layout/topbar";
 import { SettingsTabs } from "@/components/layout/settings-tabs";
-import { Github, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
-
-// Mock connection state — in real app this comes from API/session
-const isConnected = false;
+import {
+  Github,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  Loader,
+} from "lucide-react";
+import { organizationsApi, Organization } from "@/lib/api/organizations.api";
+import { useOrgStore } from "@/stores/org.store";
 
 export default function GitHubSettingsPage() {
+  const activeOrgId = useOrgStore((s) => s.activeOrgId);
+  const [org, setOrg] = useState<Organization | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!activeOrgId) {
+      setLoading(false);
+      return;
+    }
+    organizationsApi
+      .getById(activeOrgId)
+      .then((res) => setOrg(res.data as Organization))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [activeOrgId]);
+
+  // GitHub is considered connected if the org has a githubInstallationId
+  const isConnected = Boolean(
+    (org as unknown as { githubInstallationId?: string | null })?.githubInstallationId
+  );
+
+  const handleConnect = () => {
+    // GitHub App installation URL — redirect to GitHub OAuth/App install page
+    // The BE handles the callback and stores the installation ID
+    window.open(
+      `https://github.com/apps/your-app-name/installations/new`,
+      "_blank"
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       <Topbar title="Cài đặt" />
@@ -28,13 +64,23 @@ export default function GitHubSettingsPage() {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isConnected ? (
+              {loading ? (
+                <div className="flex justify-center py-6">
+                  <Loader className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              ) : !activeOrgId ? (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm text-gray-500">
+                    Chưa có tổ chức. Vui lòng tạo tổ chức trước.
+                  </p>
+                </div>
+              ) : isConnected ? (
                 <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-4">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">GitHub đã kết nối</p>
-                      <p className="text-xs text-gray-500">@username · Đã xác thực</p>
+                      <p className="text-xs text-gray-500">Tổ chức: {org?.name}</p>
                     </div>
                   </div>
                   <Badge variant="success">Đang kết nối</Badge>
@@ -54,16 +100,18 @@ export default function GitHubSettingsPage() {
                 </div>
               )}
 
-              {isConnected ? (
-                <Button variant="outline" className="w-full">
-                  Ngắt kết nối GitHub
-                </Button>
-              ) : (
-                <Button className="w-full">
-                  <Github className="h-4 w-4 mr-2" />
-                  Kết nối với GitHub
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </Button>
+              {!loading && activeOrgId && (
+                isConnected ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Ngắt kết nối GitHub
+                  </Button>
+                ) : (
+                  <Button className="w-full" onClick={handleConnect}>
+                    <Github className="h-4 w-4 mr-2" />
+                    Kết nối với GitHub
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                )
               )}
             </CardContent>
           </Card>

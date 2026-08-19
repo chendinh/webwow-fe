@@ -8,38 +8,88 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Topbar } from "@/components/layout/topbar";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader } from "lucide-react";
+import { issuesApi } from "@/lib/api/issues.api";
+import { useOrgStore } from "@/stores/org.store";
 
-interface Props {
-  params: { projectId: string };
-}
+type IssueType = "BUG" | "FEATURE" | "REFACTOR" | "PERFORMANCE" | "SECURITY" | "DEPENDENCY" | "OTHER";
+type IssuePriority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
-const issueTypes = [
+const issueTypes: { value: IssueType; label: string }[] = [
   { value: "FEATURE", label: "Tính năng mới" },
   { value: "BUG", label: "Báo lỗi" },
-  { value: "IMPROVEMENT", label: "Cải tiến" },
-  { value: "TASK", label: "Nhiệm vụ" },
+  { value: "REFACTOR", label: "Tái cấu trúc" },
+  { value: "PERFORMANCE", label: "Hiệu năng" },
+  { value: "SECURITY", label: "Bảo mật" },
+  { value: "DEPENDENCY", label: "Cập nhật thư viện" },
+  { value: "OTHER", label: "Khác" },
 ];
 
-const priorities = [
+const priorities: { value: IssuePriority; label: string }[] = [
   { value: "LOW", label: "Thấp" },
   { value: "MEDIUM", label: "Trung bình" },
   { value: "HIGH", label: "Cao" },
   { value: "CRITICAL", label: "Khẩn cấp" },
 ];
 
-export default function NewIssuePage({ params }: Props) {
+export default function NewIssuePage({
+  params,
+}: {
+  params: { projectId: string };
+}) {
   const router = useRouter();
+  const activeOrgId = useOrgStore((s) => s.activeOrgId);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState("FEATURE");
-  const [priority, setPriority] = useState("MEDIUM");
+  const [type, setType] = useState<IssueType>("FEATURE");
+  const [priority, setPriority] = useState<IssuePriority>("MEDIUM");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: call API to create issue
-    router.push(`/projects/${params.projectId}/issues`);
+    if (!activeOrgId) return;
+
+    if (description.length < 10) {
+      setError("Mô tả phải có ít nhất 10 ký tự.");
+      return;
+    }
+    if (description.length > 5000) {
+      setError("Mô tả không được vượt quá 5000 ký tự.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await issuesApi.create(params.projectId, activeOrgId, {
+        title,
+        description,
+        type,
+        priority,
+      });
+      router.push(`/projects/${params.projectId}/issues`);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+        "Tạo issue thất bại. Vui lòng thử lại.";
+      setError(Array.isArray(msg) ? msg.join(", ") : (msg as string));
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!activeOrgId) {
+    return (
+      <div className="flex flex-col h-full">
+        <Topbar title="Tạo issue mới" />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-gray-500">Chưa có tổ chức.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -64,64 +114,85 @@ export default function NewIssuePage({ params }: Props) {
               </p>
             </CardHeader>
             <CardContent>
+              {error && (
+                <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Tiêu đề</Label>
+                  <Label htmlFor="title">Tiêu đề *</Label>
                   <Input
                     id="title"
                     placeholder="Ví dụ: Thêm tính năng đăng nhập bằng Google"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
+                    minLength={3}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Mô tả chi tiết</Label>
+                  <Label htmlFor="description">
+                    Mô tả chi tiết *{" "}
+                    <span className="text-xs text-gray-400">({description.length}/5000)</span>
+                  </Label>
                   <textarea
                     id="description"
-                    rows={5}
-                    placeholder="Mô tả yêu cầu, hành vi mong muốn, hoặc các bước tái hiện lỗi..."
+                    rows={6}
+                    placeholder="Mô tả yêu cầu, hành vi mong muốn, hoặc các bước tái hiện lỗi... (tối thiểu 10 ký tự)"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
+                    required
+                    minLength={10}
+                    maxLength={5000}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="type">Loại issue</Label>
+                    <Label htmlFor="type">Loại issue *</Label>
                     <select
                       id="type"
                       value={type}
-                      onChange={(e) => setType(e.target.value)}
+                      onChange={(e) => setType(e.target.value as IssueType)}
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {issueTypes.map(({ value, label }) => (
-                        <option key={value} value={value}>{label}</option>
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="priority">Độ ưu tiên</Label>
+                    <Label htmlFor="priority">Độ ưu tiên *</Label>
                     <select
                       id="priority"
                       value={priority}
-                      onChange={(e) => setPriority(e.target.value)}
+                      onChange={(e) => setPriority(e.target.value as IssuePriority)}
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {priorities.map(({ value, label }) => (
-                        <option key={value} value={value}>{label}</option>
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
-                  <Button type="submit">Tạo issue</Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && <Loader className="h-4 w-4 mr-2 animate-spin" />}
+                    Tạo issue
+                  </Button>
                   <Link href={`/projects/${params.projectId}/issues`}>
-                    <Button type="button" variant="outline">Hủy</Button>
+                    <Button type="button" variant="outline">
+                      Hủy
+                    </Button>
                   </Link>
                 </div>
               </form>
