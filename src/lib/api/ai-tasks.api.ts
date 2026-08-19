@@ -1,44 +1,65 @@
 import { apiClient } from "./client";
 
-export interface CreateAiTaskDto {
-  type:
-    | "CODE_GENERATION"
-    | "CODE_REVIEW"
-    | "BUG_FIX"
-    | "REFACTOR"
-    | "DOCUMENTATION"
-    | "TEST_GENERATION";
-  prompt: string;
-  issueId?: string;
-  projectId?: string;
-  context?: Record<string, unknown>;
+export interface AITask {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  issueId: string;
+  status: string;
+  currentStep: string | null;
+  branchName: string | null;
+  filesChanged: string[];
+  testResult: { passed: boolean; output: string; attemptNumber: number } | null;
+  buildResult: {
+    preflightIssues?: string;
+    autoFixed?: boolean;
+    requiresUserApproval?: boolean;
+    errorSummary?: string;
+  } | null;
+  reviewSummary: string | null;
+  actualTokens: number;
+  actualCost: number;
+  preflightApproved: boolean;
+  startedAt: string | null;
+  completedAt: string | null;
+  durationMs: number | null;
+  failedAt: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  eventType: string;
+  agentType: string | null;
+  tokensUsed: number | null;
+  estimatedCost: number | null;
+  durationMs: number | null;
+  friendlyMessage: string;
+  technicalDetail: unknown;
+  oldStatus: string | null;
+  newStatus: string | null;
+  actorId: string | null;
+  createdAt: string;
 }
 
 export const aiTasksApi = {
-  create: (organizationId: string, data: CreateAiTaskDto) =>
-    apiClient.post(`/ai-tasks?organizationId=${organizationId}`, data),
-
   list: (organizationId: string, projectId?: string) => {
     const params = new URLSearchParams({ organizationId });
     if (projectId) params.set("projectId", projectId);
-    return apiClient.get(`/ai-tasks?${params.toString()}`);
+    return apiClient.get<AITask[]>(`/ai-tasks?${params.toString()}`);
   },
 
   getById: (taskId: string, organizationId: string) =>
-    apiClient.get(`/ai-tasks/${taskId}?organizationId=${organizationId}`),
+    apiClient.get<AITask>(`/ai-tasks/${taskId}?organizationId=${organizationId}`),
 
-  getResult: (taskId: string, organizationId: string) =>
-    apiClient.get(
-      `/ai-tasks/${taskId}/result?organizationId=${organizationId}`
-    ),
-
-  retry: (taskId: string, organizationId: string) =>
-    apiClient.post(
-      `/ai-tasks/${taskId}/retry?organizationId=${organizationId}`
-    ),
+  getLogs: (taskId: string, organizationId: string) =>
+    apiClient.get<ActivityLog[]>(`/ai-tasks/${taskId}/logs?organizationId=${organizationId}`),
 
   cancel: (taskId: string, organizationId: string) =>
-    apiClient.post(
-      `/ai-tasks/${taskId}/cancel?organizationId=${organizationId}`
-    ),
+    apiClient.post<AITask>(`/ai-tasks/${taskId}/cancel?organizationId=${organizationId}`),
+
+  resume: (taskId: string, organizationId: string) =>
+    apiClient.post<AITask>(`/ai-tasks/${taskId}/resume?organizationId=${organizationId}`),
 };
