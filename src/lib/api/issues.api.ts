@@ -7,6 +7,20 @@ export interface CreateIssueDto {
   priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }
 
+export interface ImplementationOption {
+  id: string
+  title: string
+  plainTitle: string
+  description: string
+  plainDescription: string
+  pros: string[]
+  cons: string[]
+  complexity: 'LOW' | 'MEDIUM' | 'HIGH'
+  estimatedMinutes: number
+  affectedFiles: string[]
+  recommended: boolean
+}
+
 export interface Issue {
   id: string;
   title: string;
@@ -18,6 +32,10 @@ export interface Issue {
   organizationId: string;
   createdById: string;
   aiDiagnosis: string | null;
+  plainDiagnosis: string | null;
+  implementationOptions: ImplementationOption[] | null;
+  selectedOptionId: string | null;
+  clarifyingQuestions: string[] | null;
   implementationPlan: string | null;
   estimatedTokens: number | null;
   estimatedCost: number | null;
@@ -41,6 +59,12 @@ export const issuesApi = {
   getById: (projectId: string, issueId: string, organizationId: string) =>
     apiClient.get<Issue>(
       `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
+    ),
+
+  selectOption: (projectId: string, issueId: string, organizationId: string, optionId: string) =>
+    apiClient.post<Issue>(
+      `/api/api/projects/${projectId}/issues/${issueId}/select-option?organizationId=${organizationId}`,
+      { optionId }
     ),
 
   delete: (projectId: string, issueId: string, organizationId: string) =>

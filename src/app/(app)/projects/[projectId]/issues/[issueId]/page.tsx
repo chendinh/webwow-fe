@@ -7,7 +7,7 @@ import {
   ArrowLeft, DollarSign, CheckCircle2, Circle, Loader2,
   AlertTriangle, GitPullRequest, XCircle, Zap,
 } from 'lucide-react'
-import { issuesApi, Issue } from '@/lib/api/issues.api'
+import { issuesApi, Issue, ImplementationOption } from '@/lib/api/issues.api'
 import { aiTasksApi, AITask } from '@/lib/api/ai-tasks.api'
 import { approvalsApi } from '@/lib/api/approvals.api'
 import { useOrgStore } from '@/stores/org.store'
@@ -17,6 +17,7 @@ import { useOrgStore } from '@/stores/org.store'
 const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Open',
   ANALYZING: 'Analyzing',
+  OPTIONS_READY: 'Chọn phương án',
   PLAN_READY: 'Plan Ready',
   APPROVED: 'Approved',
   IN_PROGRESS: 'In Progress',
@@ -29,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLOR: Record<string, string> = {
   OPEN: 'text-gray-400 bg-white/5',
   ANALYZING: 'text-sky-300 bg-sky-500/10',
+  OPTIONS_READY: 'text-violet-300 bg-violet-500/10',
   PLAN_READY: 'text-amber-300 bg-amber-500/10',
   APPROVED: 'text-emerald-300 bg-emerald-500/10',
   IN_PROGRESS: 'text-violet-300 bg-violet-500/10',
@@ -59,13 +61,14 @@ const PRIORITY_COLOR: Record<string, string> = {
 const ISSUE_TIMELINE = [
   { status: 'OPEN',      label: 'Issue created' },
   { status: 'ANALYZING', label: 'AI analyzing' },
+  { status: 'OPTIONS_READY', label: 'Chọn phương án' },
   { status: 'PLAN_READY', label: 'Plan ready' },
   { status: 'APPROVED',  label: 'Approved' },
   { status: 'IN_PROGRESS', label: 'Coding in progress' },
   { status: 'COMPLETED', label: 'Done' },
 ]
 
-const ISSUE_STATUS_ORDER = ['OPEN', 'ANALYZING', 'PLAN_READY', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'DONE']
+const ISSUE_STATUS_ORDER = ['OPEN', 'ANALYZING', 'OPTIONS_READY', 'PLAN_READY', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'DONE']
 
 // AITask sub-steps shown when coding is in progress
 const TASK_STEPS: Array<{ status: string; label: string }> = [
@@ -82,7 +85,7 @@ const TASK_STEPS: Array<{ status: string; label: string }> = [
 const TASK_STATUS_ORDER = ['QUEUED', 'PREPARING', 'CODING', 'TESTING', 'FIXING', 'REVIEWING', 'CREATING_PR', 'COMPLETED']
 
 // Statuses that require active polling
-const ACTIVE_ISSUE_STATUSES = ['ANALYZING', 'OPEN', 'APPROVED', 'IN_PROGRESS']
+const ACTIVE_ISSUE_STATUSES = ['ANALYZING', 'OPEN', 'APPROVED', 'IN_PROGRESS', 'OPTIONS_READY']
 const ACTIVE_TASK_STATUSES = ['QUEUED', 'PREPARING', 'CODING', 'TESTING', 'FIXING', 'REVIEWING', 'CREATING_PR']
 
 function getIssueStepState(stepStatus: string, currentStatus: string): 'done' | 'active' | 'inactive' {
@@ -132,6 +135,7 @@ export default function IssueDetailPage({
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectForm, setShowRejectForm] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [selectingOption, setSelectingOption] = useState(false)
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -207,6 +211,22 @@ export default function IssueDetailPage({
   }, [])
 
   // ── Actions ─────────────────────────────────────────────────────────────────
+
+  const handleSelectOption = async (optionId: string) => {
+    if (!activeOrgId || !issue) return
+    setSelectingOption(true)
+    setActionError(null)
+    try {
+      await issuesApi.selectOption(params.projectId, issue.id, activeOrgId, optionId)
+      await fetchData()
+    } catch (err: unknown) {
+      setActionError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to select option.'
+      )
+    } finally {
+      setSelectingOption(false)
+    }
+  }
 
   const handleApprove = async () => {
     if (!activeOrgId || !issue) return
@@ -404,7 +424,19 @@ export default function IssueDetailPage({
               {issue.aiDiagnosis && (
                 <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-6">
                   <h2 className="text-sm font-semibold text-sky-300">AI Analysis</h2>
-                  <p className="mt-3 text-sm/7 text-gray-300 whitespace-pre-wrap">{issue.aiDiagnosis}</p>
+                  {/* Plain language explanation first for non-devs */}
+                  {issue.plainDiagnosis && (
+                    <div className="mt-3 rounded-lg bg-white/5 px-4 py-3">
+                      <p className="text-xs font-semibold text-gray-500 mb-1">💬 Giải thích đơn giản</p>
+                      <p className="text-sm text-gray-300 leading-relaxed">{issue.plainDiagnosis}</p>
+                    </div>
+                  )}
+                  <details className="mt-3">
+                    <summary className="text-xs text-gray-600 cursor-pointer hover:text-gray-400 transition-colors">
+                      Xem phân tích kỹ thuật ▸
+                    </summary>
+                    <p className="mt-2 text-sm/7 text-gray-400 whitespace-pre-wrap">{issue.aiDiagnosis}</p>
+                  </details>
                 </div>
               )}
 
@@ -491,6 +523,102 @@ export default function IssueDetailPage({
 
             {/* ── Sidebar ── */}
             <div className="space-y-4">
+
+              {/* Option picker — shown when AI has multiple implementation approaches */}
+              {issue.status === 'OPTIONS_READY' && issue.implementationOptions && issue.implementationOptions.length > 0 && (
+                <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Zap className="h-4 w-4 text-violet-400" />
+                    <h2 className="text-sm font-semibold text-violet-300">Chọn cách thực hiện</h2>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">
+                    AI đề xuất {issue.implementationOptions.length} phương án. Chọn một để bắt đầu lên kế hoạch chi tiết.
+                  </p>
+
+                  {/* Clarifying questions if any */}
+                  {issue.clarifyingQuestions && issue.clarifyingQuestions.length > 0 && (
+                    <div className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                      <p className="text-xs font-semibold text-amber-300 mb-1.5">💡 Để hiểu rõ hơn, AI muốn hỏi:</p>
+                      <ul className="space-y-1">
+                        {issue.clarifyingQuestions.map((q, i) => (
+                          <li key={i} className="text-xs text-gray-400">• {q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {actionError && (
+                    <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">{actionError}</p>
+                  )}
+
+                  <div className="space-y-3">
+                    {issue.implementationOptions.map((opt: ImplementationOption) => (
+                      <div
+                        key={opt.id}
+                        className={`rounded-xl border p-4 transition-colors ${
+                          opt.recommended
+                            ? 'border-violet-500/40 bg-violet-500/10'
+                            : 'border-white/5 bg-gray-900/50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-gray-100">{opt.plainTitle}</p>
+                              {opt.recommended && (
+                                <span className="rounded-full bg-violet-500/20 border border-violet-500/30 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+                                  Đề xuất
+                                </span>
+                              )}
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                opt.complexity === 'LOW' ? 'bg-emerald-500/10 text-emerald-400'
+                                : opt.complexity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-400'
+                                : 'bg-red-500/10 text-red-400'
+                              }`}>
+                                ~{opt.estimatedMinutes} phút
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400 leading-relaxed">{opt.plainDescription}</p>
+
+                            {/* Pros/Cons */}
+                            {(opt.pros.length > 0 || opt.cons.length > 0) && (
+                              <div className="mt-2 grid grid-cols-2 gap-2">
+                                {opt.pros.length > 0 && (
+                                  <div>
+                                    {opt.pros.slice(0, 2).map((p, i) => (
+                                      <p key={i} className="text-[10px] text-emerald-400">✓ {p}</p>
+                                    ))}
+                                  </div>
+                                )}
+                                {opt.cons.length > 0 && (
+                                  <div>
+                                    {opt.cons.slice(0, 2).map((c, i) => (
+                                      <p key={i} className="text-[10px] text-red-400">✗ {c}</p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleSelectOption(opt.id)}
+                          disabled={selectingOption}
+                          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                            opt.recommended
+                              ? 'bg-violet-500 text-white hover:bg-violet-400'
+                              : 'border border-white/10 text-gray-300 hover:border-white/20 hover:text-white'
+                          }`}
+                        >
+                          {selectingOption ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                          Chọn phương án này
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Approval panel */}
               {issue.status === 'PLAN_READY' && (

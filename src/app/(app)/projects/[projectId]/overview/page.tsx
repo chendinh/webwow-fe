@@ -394,7 +394,7 @@ export default function ProjectOverviewPage({
     }
   }
 
-  const openIssues = issues.filter((i) => ['OPEN', 'ANALYZING', 'PLAN_READY'].includes(i.status))
+  const openIssues = issues.filter((i) => ['OPEN', 'ANALYZING', 'OPTIONS_READY', 'PLAN_READY'].includes(i.status))
   const activeTasks = tasks.filter((t) => ACTIVE_TASK_STATUSES.includes(t.status))
   const statusCfg = project ? STATUS_CONFIG[project.status] ?? STATUS_CONFIG.PENDING_ANALYSIS : null
   const StatusIcon = statusCfg?.icon ?? Clock

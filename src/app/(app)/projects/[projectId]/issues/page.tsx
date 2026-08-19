@@ -11,6 +11,7 @@ import { ProjectTabs } from '@/components/layout/project-tabs'
 const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Open',
   ANALYZING: 'Analyzing',
+  OPTIONS_READY: 'Chọn phương án',
   PLAN_READY: 'Plan Ready',
   APPROVED: 'Approved',
   IN_PROGRESS: 'In Progress',
@@ -21,6 +22,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLOR: Record<string, string> = {
   OPEN: 'text-gray-400 bg-white/5',
   ANALYZING: 'text-sky-300 bg-sky-500/10',
+  OPTIONS_READY: 'text-violet-300 bg-violet-500/10',
   PLAN_READY: 'text-amber-300 bg-amber-500/10',
   APPROVED: 'text-emerald-300 bg-emerald-500/10',
   IN_PROGRESS: 'text-violet-300 bg-violet-500/10',
@@ -49,7 +51,7 @@ type FilterTab = 'ALL' | 'OPEN' | 'IN_PROGRESS' | 'DONE'
 
 // ─── Issue card ───────────────────────────────────────────────────────────────
 function IssueCard({ issue, projectId }: { issue: Issue; projectId: string }) {
-  const isActionable = issue.status === 'PLAN_READY'
+  const isActionable = issue.status === 'PLAN_READY' || issue.status === 'OPTIONS_READY'
 
   return (
     <Link href={`/projects/${projectId}/issues/${issue.id}`}>
@@ -96,10 +98,14 @@ function IssueCard({ issue, projectId }: { issue: Issue; projectId: string }) {
           <div className="flex-none self-center" onClick={(e) => e.preventDefault()}>
             <Link
               href={`/projects/${projectId}/issues/${issue.id}`}
-              className="flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 transition-colors"
+              className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors ${
+                issue.status === 'OPTIONS_READY'
+                  ? 'bg-violet-500 hover:bg-violet-400'
+                  : 'bg-amber-500 hover:bg-amber-400'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
-              Approve
+              {issue.status === 'OPTIONS_READY' ? 'Chọn phương án' : 'Approve'}
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -135,7 +141,7 @@ export default function ProjectIssuesPage({
 
   const filtered = issues.filter((i) => {
     if (filter === 'ALL') return true
-    if (filter === 'OPEN') return ['OPEN', 'ANALYZING', 'PLAN_READY'].includes(i.status)
+    if (filter === 'OPEN') return ['OPEN', 'ANALYZING', 'OPTIONS_READY', 'PLAN_READY'].includes(i.status)
     if (filter === 'IN_PROGRESS') return ['APPROVED', 'IN_PROGRESS'].includes(i.status)
     if (filter === 'DONE') return ['DONE', 'REJECTED'].includes(i.status)
     return true
@@ -146,7 +152,7 @@ export default function ProjectIssuesPage({
     {
       id: 'OPEN',
       label: 'Open',
-      count: issues.filter((i) => ['OPEN', 'ANALYZING', 'PLAN_READY'].includes(i.status)).length,
+      count: issues.filter((i) => ['OPEN', 'ANALYZING', 'OPTIONS_READY', 'PLAN_READY'].includes(i.status)).length,
     },
     {
       id: 'IN_PROGRESS',
