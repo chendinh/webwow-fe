@@ -16,17 +16,17 @@ const tabs = [
 
 export function SettingsTabs({ activeTab }: SettingsTabsProps) {
   return (
-    <div className="border-b border-gray-200 bg-white px-6">
-      <nav className="flex gap-1 -mb-px">
+    <div className="border-b border-white/5 bg-gray-900/50">
+      <nav className="flex gap-0.5 px-6 -mb-px">
         {tabs.map(({ key, label, icon: Icon, path }) => (
           <Link
             key={key}
             href={path}
             className={cn(
-              "inline-flex items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors",
+              "inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors",
               activeTab === key
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? "border-sky-400 text-sky-300"
+                : "border-transparent text-gray-500 hover:border-white/20 hover:text-gray-300"
             )}
           >
             <Icon className="h-4 w-4" />

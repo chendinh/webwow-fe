@@ -99,7 +99,7 @@ export default function NewProjectPage() {
   if (!activeOrgId) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-gray-500">Chưa có tổ chức. Vui lòng tạo tổ chức trước.</p>
+        <p className="text-sm text-gray-400">Chưa có tổ chức. Vui lòng tạo tổ chức trước.</p>
       </div>
     );
   }
@@ -111,7 +111,7 @@ export default function NewProjectPage() {
           <div className="mb-6">
             <Link
               href="/projects"
-              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+              className="inline-flex items-center text-sm text-gray-400 hover:text-gray-200 transition"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Quay lại danh sách dự án
@@ -123,10 +123,10 @@ export default function NewProjectPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <Github className="h-6 w-6 text-gray-700" />
+                  <Github className="h-6 w-6 text-gray-400" />
                   <CardTitle>Chọn GitHub Repository</CardTitle>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-400">
                   Chọn repo từ tài khoản GitHub đã kết nối, hoặc nhập thủ công.
                 </p>
               </CardHeader>
@@ -136,25 +136,25 @@ export default function NewProjectPage() {
                     <Loader className="h-6 w-6 animate-spin text-gray-400" />
                   </div>
                 ) : reposError ? (
-                  <p className="text-sm text-red-500">{reposError}</p>
+                  <p className="text-sm text-red-400">{reposError}</p>
                 ) : repos.length === 0 ? (
-                  <p className="text-sm text-gray-500">Không tìm thấy repo nào.</p>
+                  <p className="text-sm text-gray-400">Không tìm thấy repo nào.</p>
                 ) : (
-                  <ul className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
+                  <ul className="divide-y divide-white/5 max-h-72 overflow-y-auto rounded-lg border border-white/5">
                     {repos.map((repo) => (
                       <li key={repo.id}>
                         <button
                           type="button"
                           onClick={() => handleSelectRepo(repo)}
-                          className="w-full flex items-start gap-3 px-3 py-3 hover:bg-gray-50 text-left"
+                          className="w-full flex items-start gap-3 px-3 py-3 hover:bg-white/5 text-left transition"
                         >
                           <Github className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{repo.full_name}</p>
+                            <p className="text-sm font-medium text-gray-100">{repo.full_name}</p>
                             {repo.description && (
-                              <p className="text-xs text-gray-500 truncate">{repo.description}</p>
+                              <p className="text-xs text-gray-400 truncate">{repo.description}</p>
                             )}
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <p className="text-xs text-gray-500 mt-0.5">
                               Branch: {repo.default_branch}
                             </p>
                           </div>
@@ -164,11 +164,11 @@ export default function NewProjectPage() {
                   </ul>
                 )}
 
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t border-white/5">
                   <button
                     type="button"
                     onClick={() => setStep("manual")}
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-sky-400 hover:text-sky-300 transition"
                   >
                     Nhập thủ công →
                   </button>
@@ -182,16 +182,16 @@ export default function NewProjectPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <Github className="h-6 w-6 text-gray-700" />
+                  <Github className="h-6 w-6 text-gray-400" />
                   <CardTitle>Thông tin dự án</CardTitle>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-400">
                   Điền thông tin dự án để AI IT Team phân tích và quản lý.
                 </p>
               </CardHeader>
               <CardContent>
                 {error && (
-                  <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                     {error}
                   </div>
                 )}
@@ -266,7 +266,7 @@ export default function NewProjectPage() {
                     <button
                       type="button"
                       onClick={() => setStep("repo")}
-                      className="text-sm text-gray-500 hover:text-gray-700"
+                      className="text-sm text-gray-400 hover:text-gray-200 transition"
                     >
                       ← Quay lại
                     </button>

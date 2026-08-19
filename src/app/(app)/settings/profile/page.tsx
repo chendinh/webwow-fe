@@ -57,23 +57,23 @@ export default function ProfileSettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold select-none">
+                <div className="h-12 w-12 rounded-full bg-sky-500/20 ring-1 ring-sky-500/30 flex items-center justify-center text-sky-300 text-lg font-bold select-none">
                   {(user?.name ?? user?.email ?? "U")[0].toUpperCase()}
                 </div>
                 <div>
                   <CardTitle>Thông tin cá nhân</CardTitle>
-                  <p className="text-sm text-gray-500">Cập nhật thông tin hồ sơ của bạn</p>
+                  <p className="text-sm text-gray-400">Cập nhật thông tin hồ sơ của bạn</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               {error && (
-                <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="mb-4 rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+                <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4" />
                   Đã lưu thay đổi thành công.
                 </div>
@@ -95,9 +95,8 @@ export default function ProfileSettingsPage() {
                     type="email"
                     value={email}
                     disabled
-                    className="bg-gray-50 text-gray-500 cursor-not-allowed"
                   />
-                  <p className="text-xs text-gray-400">Email không thể thay đổi.</p>
+                  <p className="text-xs text-gray-500">Email không thể thay đổi.</p>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <Button type="submit" disabled={submitting}>
@@ -109,15 +108,15 @@ export default function ProfileSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-red-500/20 bg-red-500/5">
             <CardHeader>
-              <CardTitle className="text-base text-red-600">Khu vực nguy hiểm</CardTitle>
+              <CardTitle className="text-base text-red-400">Khu vực nguy hiểm</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Xóa tài khoản</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-sm font-medium text-gray-100">Xóa tài khoản</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
                     Hành động này không thể hoàn tác. Tất cả dữ liệu sẽ bị xóa vĩnh viễn.
                   </p>
                 </div>

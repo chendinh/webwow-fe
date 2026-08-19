@@ -82,7 +82,7 @@ export default function NewIssuePage({
   if (!activeOrgId) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-gray-500">Chưa có tổ chức.</p>
+        <p className="text-sm text-gray-400">Chưa có tổ chức.</p>
       </div>
     );
   }
@@ -94,7 +94,7 @@ export default function NewIssuePage({
           <div className="mb-6">
             <Link
               href={`/projects/${params.projectId}/issues`}
-              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+              className="inline-flex items-center text-sm text-gray-400 hover:text-gray-200 transition"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Quay lại danh sách issues
@@ -104,13 +104,13 @@ export default function NewIssuePage({
           <Card>
             <CardHeader>
               <CardTitle>Thông tin issue</CardTitle>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-400">
                 Mô tả chi tiết để AI có thể phân tích và thực hiện.
               </p>
             </CardHeader>
             <CardContent>
               {error && (
-                <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                   {error}
                 </div>
               )}
@@ -130,7 +130,7 @@ export default function NewIssuePage({
                 <div className="space-y-2">
                   <Label htmlFor="description">
                     Mô tả chi tiết *{" "}
-                    <span className="text-xs text-gray-400">({description.length}/5000)</span>
+                    <span className="text-xs text-gray-500">({description.length}/5000)</span>
                   </Label>
                   <textarea
                     id="description"
@@ -141,7 +141,7 @@ export default function NewIssuePage({
                     required
                     minLength={10}
                     maxLength={5000}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition resize-none disabled:opacity-50"
                   />
                 </div>
 
@@ -152,7 +152,7 @@ export default function NewIssuePage({
                       id="type"
                       value={type}
                       onChange={(e) => setType(e.target.value as IssueType)}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-2.5 text-sm text-gray-100 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition"
                     >
                       {issueTypes.map(({ value, label }) => (
                         <option key={value} value={value}>
@@ -168,7 +168,7 @@ export default function NewIssuePage({
                       id="priority"
                       value={priority}
                       onChange={(e) => setPriority(e.target.value as IssuePriority)}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-2.5 text-sm text-gray-100 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition"
                     >
                       {priorities.map(({ value, label }) => (
                         <option key={value} value={value}>

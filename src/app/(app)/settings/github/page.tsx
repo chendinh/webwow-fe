@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { organizationsApi, Organization } from "@/lib/api/organizations.api";
 import { useOrgStore } from "@/stores/org.store";
+import { apiClient } from "@/lib/api/client";
 
 export default function GitHubSettingsPage() {
   const activeOrgId = useOrgStore((s) => s.activeOrgId);
@@ -37,13 +38,14 @@ export default function GitHubSettingsPage() {
     (org as unknown as { githubInstallationId?: string | null })?.githubInstallationId
   );
 
-  const handleConnect = () => {
-    // GitHub App installation URL — redirect to GitHub OAuth/App install page
-    // The BE handles the callback and stores the installation ID
-    window.open(
-      `https://github.com/apps/your-app-name/installations/new`,
-      "_blank"
-    );
+  const handleConnect = async () => {
+    try {
+      const res = await apiClient.get<{ installUrl: string }>("/api/github/install-url");
+      window.open(res.data.installUrl, "_blank");
+    } catch {
+      // fallback: open GitHub Apps page without a specific app name
+      window.open("https://github.com/apps", "_blank");
+    }
   };
 
   return (
@@ -54,10 +56,10 @@ export default function GitHubSettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <Github className="h-5 w-5 text-gray-700" />
+                <Github className="h-5 w-5 text-gray-400" />
                 <CardTitle>Kết nối GitHub</CardTitle>
               </div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-400">
                 Kết nối tài khoản GitHub để AI có thể đọc và ghi code vào repository của bạn.
               </p>
             </CardHeader>
@@ -67,29 +69,29 @@ export default function GitHubSettingsPage() {
                   <Loader className="h-5 w-5 animate-spin text-gray-400" />
                 </div>
               ) : !activeOrgId ? (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-sm text-gray-500">
+                <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm text-gray-400">
                     Chưa có tổ chức. Vui lòng tạo tổ chức trước.
                   </p>
                 </div>
               ) : isConnected ? (
-                <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-emerald-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">GitHub đã kết nối</p>
-                      <p className="text-xs text-gray-500">Tổ chức: {org?.name}</p>
+                      <p className="text-sm font-medium text-gray-100">GitHub đã kết nối</p>
+                      <p className="text-xs text-gray-400">Tổ chức: {org?.name}</p>
                     </div>
                   </div>
                   <Badge variant="success">Đang kết nối</Badge>
                 </div>
               ) : (
-                <div className="flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50 p-4">
+                <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
                   <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-orange-500" />
+                    <AlertCircle className="h-5 w-5 text-amber-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Chưa kết nối GitHub</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-gray-100">Chưa kết nối GitHub</p>
+                      <p className="text-xs text-gray-400">
                         Bạn cần kết nối GitHub để tạo và quản lý dự án.
                       </p>
                     </div>
@@ -127,11 +129,11 @@ export default function GitHubSettingsPage() {
                 { perm: "Quản lý Webhooks", status: false },
               ].map(({ perm, status }) => (
                 <div key={perm} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700">{perm}</span>
+                  <span className="text-gray-400">{perm}</span>
                   {status ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
                   ) : (
-                    <AlertCircle className="h-4 w-4 text-gray-300" />
+                    <AlertCircle className="h-4 w-4 text-gray-600" />
                   )}
                 </div>
               ))}
