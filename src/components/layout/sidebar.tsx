@@ -6,23 +6,32 @@ import { cn } from "@/lib/utils/cn";
 import {
   LayoutDashboard,
   FolderOpen,
-  GitPullRequest,
-  Bell,
+  CreditCard,
   Settings,
   Bot,
 } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Dự án", icon: FolderOpen },
-  { href: "/ai-tasks", label: "AI Tasks", icon: Bot },
-  { href: "/pull-requests", label: "Pull Requests", icon: GitPullRequest },
-  { href: "/activity", label: "Hoạt động", icon: Bell },
+  { href: "/usage", label: "Sử dụng & Thanh toán", icon: CreditCard },
   { href: "/settings", label: "Cài đặt", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+
+  // Derive initials for avatar
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? "U";
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
@@ -56,15 +65,19 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Footer */}
+      {/* User footer */}
       <div className="border-t border-gray-200 px-3 py-4">
         <div className="flex items-center gap-3 rounded-md px-3 py-2">
-          <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-            U
+          <div className="h-8 w-8 flex-shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">User</p>
-            <p className="text-xs text-gray-500 truncate">user@example.com</p>
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {user?.name ?? "User"}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {user?.email ?? ""}
+            </p>
           </div>
         </div>
       </div>
