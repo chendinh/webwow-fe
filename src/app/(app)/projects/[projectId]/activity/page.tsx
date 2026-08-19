@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Topbar } from "@/components/layout/topbar";
 import { ProjectTabs } from "@/components/layout/project-tabs";
 import { Activity, Loader } from "lucide-react";
 import { activityApi, ActivityLogEntry } from "@/lib/api/activity.api";
@@ -43,7 +42,6 @@ export default function ProjectActivityPage({
 
   return (
     <div className="flex flex-col h-full">
-      <Topbar title="Hoạt động" />
       <ProjectTabs projectId={params.projectId} activeTab="activity" />
       <div className="flex-1 p-6 space-y-4">
         <div>

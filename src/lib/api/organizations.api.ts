@@ -6,6 +6,7 @@ export interface Organization {
   slug: string;
   logoUrl: string | null;
   usageCap: number;
+  aiOutputLanguage: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +19,7 @@ export interface CreateOrganizationDto {
 export interface UpdateOrganizationDto {
   name?: string;
   githubInstallationId?: string;
+  aiOutputLanguage?: string;
 }
 
 export const organizationsApi = {

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Topbar } from "@/components/layout/topbar";
 import { SettingsTabs } from "@/components/layout/settings-tabs";
 import { Building, Users, Plus, Loader, CheckCircle } from "lucide-react";
 import { organizationsApi, Organization } from "@/lib/api/organizations.api";
@@ -118,21 +117,19 @@ export default function OrganizationSettingsPage() {
 
   if (!activeOrgId) {
     return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Cài đặt" />
+      <>
         <SettingsTabs activeTab="organization" />
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm text-gray-500">
             Chưa có tổ chức. Vui lòng tạo tổ chức trước.
           </p>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <Topbar title="Cài đặt" />
+    <>
       <SettingsTabs activeTab="organization" />
       <div className="flex-1 p-6">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -275,6 +272,6 @@ export default function OrganizationSettingsPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </>
   );
 }

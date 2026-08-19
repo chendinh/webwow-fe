@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Topbar } from "@/components/layout/topbar";
 import { SettingsTabs } from "@/components/layout/settings-tabs";
 import {
   Github,
@@ -48,8 +47,7 @@ export default function GitHubSettingsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <Topbar title="Cài đặt" />
+    <>
       <SettingsTabs activeTab="github" />
       <div className="flex-1 p-6">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -141,6 +139,6 @@ export default function GitHubSettingsPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </>
   );
 }

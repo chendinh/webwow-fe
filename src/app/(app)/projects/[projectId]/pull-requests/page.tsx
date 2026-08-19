@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Topbar } from "@/components/layout/topbar";
 import { ProjectTabs } from "@/components/layout/project-tabs";
 import { GitPullRequest, ExternalLink, Loader } from "lucide-react";
 import { projectsApi } from "@/lib/api/projects.api";
@@ -69,7 +68,6 @@ export default function ProjectPullRequestsPage({
 
   return (
     <div className="flex flex-col h-full">
-      <Topbar title="Pull Requests" />
       <ProjectTabs projectId={params.projectId} activeTab="pull-requests" />
       <div className="flex-1 p-6 space-y-4">
         <div>

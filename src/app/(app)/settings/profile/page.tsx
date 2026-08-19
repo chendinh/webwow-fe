@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Topbar } from "@/components/layout/topbar";
 import { SettingsTabs } from "@/components/layout/settings-tabs";
 import { Loader, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
@@ -51,8 +50,7 @@ export default function ProfileSettingsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <Topbar title="Cài đặt" />
+    <>
       <SettingsTabs activeTab="profile" />
       <div className="flex-1 p-6">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -131,6 +129,6 @@ export default function ProfileSettingsPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </>
   );
 }

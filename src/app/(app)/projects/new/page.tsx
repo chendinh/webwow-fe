@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Topbar } from "@/components/layout/topbar";
 import { Github, ArrowLeft, Loader } from "lucide-react";
 import Link from "next/link";
 import { projectsApi } from "@/lib/api/projects.api";
@@ -99,18 +98,14 @@ export default function NewProjectPage() {
 
   if (!activeOrgId) {
     return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Tạo dự án mới" />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-500">Chưa có tổ chức. Vui lòng tạo tổ chức trước.</p>
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-gray-500">Chưa có tổ chức. Vui lòng tạo tổ chức trước.</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      <Topbar title="Tạo dự án mới" />
       <div className="flex-1 p-6">
         <div className="max-w-2xl mx-auto">
           <div className="mb-6">

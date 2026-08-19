@@ -1,429 +1,451 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Topbar } from "@/components/layout/topbar";
-import {
-  ArrowLeft,
-  DollarSign,
-  CheckCircle,
-  Circle,
-  Loader,
-  AlertTriangle,
-} from "lucide-react";
-import { issuesApi, Issue } from "@/lib/api/issues.api";
-import { approvalsApi } from "@/lib/api/approvals.api";
-import { useOrgStore } from "@/stores/org.store";
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, DollarSign, CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react'
+import { issuesApi, Issue } from '@/lib/api/issues.api'
+import { approvalsApi } from '@/lib/api/approvals.api'
+import { useOrgStore } from '@/stores/org.store'
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "success" | "warning" | "destructive" }
-> = {
-  OPEN: { label: "Đang mở", variant: "default" },
-  ANALYZING: { label: "Đang phân tích", variant: "warning" },
-  PLAN_READY: { label: "Kế hoạch sẵn sàng", variant: "warning" },
-  APPROVED: { label: "Đã phê duyệt", variant: "success" },
-  IN_PROGRESS: { label: "Đang thực hiện", variant: "default" },
-  DONE: { label: "Hoàn thành", variant: "success" },
-  REJECTED: { label: "Đã từ chối", variant: "destructive" },
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  BUG: "Lỗi",
-  FEATURE: "Tính năng",
-  REFACTOR: "Tái cấu trúc",
-  PERFORMANCE: "Hiệu năng",
-  SECURITY: "Bảo mật",
-  DEPENDENCY: "Thư viện",
-  OTHER: "Khác",
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  CRITICAL: "Khẩn cấp",
-  HIGH: "Cao",
-  MEDIUM: "Trung bình",
-  LOW: "Thấp",
-};
-
-const TIMELINE_STEPS = [
-  { status: "OPEN", label: "Issue được tạo" },
-  { status: "ANALYZING", label: "AI đang phân tích" },
-  { status: "PLAN_READY", label: "Kế hoạch sẵn sàng" },
-  { status: "APPROVED", label: "Phê duyệt" },
-  { status: "IN_PROGRESS", label: "Đang thực hiện" },
-  { status: "DONE", label: "Hoàn thành" },
-];
-
-const STATUS_ORDER = ["OPEN", "ANALYZING", "PLAN_READY", "APPROVED", "IN_PROGRESS", "DONE"];
-
-function getStepState(stepStatus: string, currentStatus: string) {
-  const stepIdx = STATUS_ORDER.indexOf(stepStatus);
-  const currentIdx = STATUS_ORDER.indexOf(currentStatus);
-  if (currentStatus === "REJECTED") {
-    return stepIdx === 0 ? "done" : "inactive";
-  }
-  if (stepIdx < currentIdx) return "done";
-  if (stepIdx === currentIdx) return "active";
-  return "inactive";
+// ─── Config ───────────────────────────────────────────────────────────────────
+const STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Open',
+  ANALYZING: 'Analyzing',
+  PLAN_READY: 'Plan Ready',
+  APPROVED: 'Approved',
+  IN_PROGRESS: 'In Progress',
+  DONE: 'Done',
+  REJECTED: 'Rejected',
 }
 
+const STATUS_COLOR: Record<string, string> = {
+  OPEN: 'text-gray-400 bg-white/5',
+  ANALYZING: 'text-sky-300 bg-sky-500/10',
+  PLAN_READY: 'text-amber-300 bg-amber-500/10',
+  APPROVED: 'text-emerald-300 bg-emerald-500/10',
+  IN_PROGRESS: 'text-violet-300 bg-violet-500/10',
+  DONE: 'text-emerald-400 bg-emerald-500/10',
+  REJECTED: 'text-red-400 bg-red-500/10',
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  BUG: 'Bug',
+  FEATURE: 'Feature',
+  REFACTOR: 'Refactor',
+  PERFORMANCE: 'Performance',
+  SECURITY: 'Security',
+  DEPENDENCY: 'Dependency',
+  OTHER: 'Other',
+}
+
+const PRIORITY_LABELS: Record<string, string> = {
+  CRITICAL: 'Critical',
+  HIGH: 'High',
+  MEDIUM: 'Medium',
+  LOW: 'Low',
+}
+
+const PRIORITY_COLOR: Record<string, string> = {
+  CRITICAL: 'text-red-300 bg-red-500/10',
+  HIGH: 'text-amber-300 bg-amber-500/10',
+  MEDIUM: 'text-sky-300 bg-sky-500/10',
+  LOW: 'text-gray-400 bg-white/5',
+}
+
+const TIMELINE_STEPS = [
+  { status: 'OPEN', label: 'Issue created' },
+  { status: 'ANALYZING', label: 'AI analyzing' },
+  { status: 'PLAN_READY', label: 'Plan ready' },
+  { status: 'APPROVED', label: 'Approved' },
+  { status: 'IN_PROGRESS', label: 'In progress' },
+  { status: 'DONE', label: 'Done' },
+]
+
+const STATUS_ORDER = ['OPEN', 'ANALYZING', 'PLAN_READY', 'APPROVED', 'IN_PROGRESS', 'DONE']
+
+function getStepState(stepStatus: string, currentStatus: string) {
+  const si = STATUS_ORDER.indexOf(stepStatus)
+  const ci = STATUS_ORDER.indexOf(currentStatus)
+  if (currentStatus === 'REJECTED') return si === 0 ? 'done' : 'inactive'
+  if (si < ci) return 'done'
+  if (si === ci) return 'active'
+  return 'inactive'
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function IssueDetailPage({
   params,
 }: {
-  params: { projectId: string; issueId: string };
+  params: { projectId: string; issueId: string }
 }) {
-  const router = useRouter();
-  const activeOrgId = useOrgStore((s) => s.activeOrgId);
-  const [issue, setIssue] = useState<Issue | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [approving, setApproving] = useState(false);
-  const [rejecting, setRejecting] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [showRejectForm, setShowRejectForm] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const router = useRouter()
+  const activeOrgId = useOrgStore((s) => s.activeOrgId)
+  const [issue, setIssue] = useState<Issue | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [approving, setApproving] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [showRejectForm, setShowRejectForm] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const fetchIssue = async () => {
-    if (!activeOrgId) return;
+    if (!activeOrgId) return
     try {
-      const res = await issuesApi.getById(params.projectId, params.issueId, activeOrgId);
-      setIssue(res.data as Issue);
+      const res = await issuesApi.getById(params.projectId, params.issueId, activeOrgId)
+      setIssue(res.data as Issue)
     } catch (e) {
-      console.error("Failed to fetch issue", e);
+      console.error('Failed to fetch issue', e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  useEffect(() => {
-    if (!activeOrgId) {
-      setLoading(false);
-      return;
-    }
-    fetchIssue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrgId, params.issueId]);
-
-  const handleApprove = async () => {
-    if (!activeOrgId || !issue) return;
-    setApproving(true);
-    setActionError(null);
-    try {
-      await approvalsApi.approve(issue.id, activeOrgId);
-      await fetchIssue();
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Phê duyệt thất bại.";
-      setActionError(msg);
-    } finally {
-      setApproving(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!activeOrgId || !issue || !rejectReason.trim()) return;
-    setRejecting(true);
-    setActionError(null);
-    try {
-      await approvalsApi.reject(issue.id, activeOrgId, rejectReason.trim());
-      router.push(`/projects/${params.projectId}/issues`);
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Từ chối thất bại.";
-      setActionError(msg);
-      setRejecting(false);
-    }
-  };
-
-  if (!activeOrgId) {
-    return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Chi tiết Issue" />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-500">Chưa có tổ chức.</p>
-        </div>
-      </div>
-    );
   }
 
-  if (loading) {
+  useEffect(() => {
+    if (!activeOrgId) { setLoading(false); return }
+    fetchIssue()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOrgId, params.issueId])
+
+  const handleApprove = async () => {
+    if (!activeOrgId || !issue) return
+    setApproving(true)
+    setActionError(null)
+    try {
+      await approvalsApi.approve(issue.id, activeOrgId)
+      await fetchIssue()
+    } catch (err: unknown) {
+      setActionError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Approval failed.'
+      )
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!activeOrgId || !issue || !rejectReason.trim()) return
+    setRejecting(true)
+    setActionError(null)
+    try {
+      await approvalsApi.reject(issue.id, activeOrgId, rejectReason.trim())
+      router.push(`/projects/${params.projectId}/issues`)
+    } catch (err: unknown) {
+      setActionError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Rejection failed.'
+      )
+      setRejecting(false)
+    }
+  }
+
+  if (!activeOrgId || loading) {
     return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Chi tiết Issue" />
-        <div className="flex-1 flex justify-center items-center">
-          <Loader className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-700" />
       </div>
-    );
+    )
   }
 
   if (!issue) {
     return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Chi tiết Issue" />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <AlertTriangle className="h-12 w-12 text-gray-300" />
-          <p className="text-sm text-gray-500">Không tìm thấy issue.</p>
-          <Link href={`/projects/${params.projectId}/issues`}>
-            <Button variant="outline" size="sm">
-              Quay lại
-            </Button>
-          </Link>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle className="h-12 w-12 text-gray-700" />
+        <p className="mt-3 text-sm text-gray-500">Issue not found.</p>
+        <Link
+          href={`/projects/${params.projectId}/issues`}
+          className="mt-3 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+        >
+          ← Back to issues
+        </Link>
       </div>
-    );
+    )
   }
 
-  const statusCfg = STATUS_CONFIG[issue.status] ?? STATUS_CONFIG.OPEN;
-
   return (
-    <div className="flex flex-col h-full">
-      <Topbar title="Chi tiết Issue" />
-      <div className="flex-1 p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-0">
+
+      <div className="p-6">
+        <div className="mx-auto max-w-5xl space-y-6">
+          {/* Back + status */}
           <div className="flex items-center justify-between">
             <Link
               href={`/projects/${params.projectId}/issues`}
-              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Quay lại danh sách
+              <ArrowLeft className="h-4 w-4" />
+              Back to issues
             </Link>
-            <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLOR[issue.status] ?? 'text-gray-500 bg-white/5'}`}
+            >
+              {STATUS_LABELS[issue.status] ?? issue.status}
+            </span>
           </div>
 
+          {/* Two-column layout */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Main content */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl">{issue.title}</CardTitle>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge variant="secondary">
-                      {TYPE_LABELS[issue.type] ?? issue.type}
-                    </Badge>
-                    <Badge
-                      variant={
-                        issue.priority === "CRITICAL"
-                          ? "destructive"
-                          : issue.priority === "HIGH"
-                          ? "warning"
-                          : "secondary"
-                      }
-                    >
-                      {PRIORITY_LABELS[issue.priority] ?? issue.priority}
-                    </Badge>
-                    <span className="text-xs text-gray-400">
-                      Tạo lúc: {new Date(issue.createdAt).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+            {/* Main column */}
+            <div className="space-y-5 lg:col-span-2">
+              {/* Title + meta */}
+              <div className="rounded-xl border border-white/5 bg-gray-900 p-6">
+                <h1 className="text-xl font-bold text-white">{issue.title}</h1>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_COLOR[issue.priority] ?? 'text-gray-500 bg-white/5'}`}>
+                    {PRIORITY_LABELS[issue.priority] ?? issue.priority}
+                  </span>
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-500">
+                    {TYPE_LABELS[issue.type] ?? issue.type}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    Created {new Date(issue.createdAt).toLocaleDateString('en-US')}
+                  </span>
+                </div>
+
+                <div className="mt-5 border-t border-white/5 pt-5">
+                  <p className="text-sm/7 text-gray-300 whitespace-pre-wrap">
                     {issue.description}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* AI Diagnosis */}
               {issue.aiDiagnosis && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Phân tích AI</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                      {issue.aiDiagnosis}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-6">
+                  <h2 className="text-sm font-semibold text-sky-300">AI Analysis</h2>
+                  <p className="mt-3 text-sm/7 text-gray-300 whitespace-pre-wrap">
+                    {issue.aiDiagnosis}
+                  </p>
+                </div>
               )}
 
               {/* Implementation Plan */}
               {issue.implementationPlan ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Kế hoạch thực hiện</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                      {issue.implementationPlan}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : issue.status === "ANALYZING" ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Kế hoạch AI</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 italic">
-                      <Loader className="h-4 w-4 animate-spin" />
-                      AI đang phân tích yêu cầu và sẽ tạo kế hoạch chi tiết trong vài phút...
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-6">
+                  <h2 className="text-sm font-semibold text-violet-300">Implementation Plan</h2>
+                  {(() => {
+                    const plan = typeof issue.implementationPlan === 'string'
+                      ? JSON.parse(issue.implementationPlan)
+                      : issue.implementationPlan as {
+                          summary?: string
+                          steps?: Array<{ order: number; type: string; filePath: string; description: string; testRequired?: boolean }>
+                          testsToWrite?: string[]
+                          complexityLevel?: string
+                          estimatedMinutes?: number
+                          rollbackStrategy?: string
+                        }
+                    return (
+                      <div className="mt-4 space-y-4">
+                        {plan.summary && (
+                          <p className="text-sm/7 text-gray-300">{plan.summary}</p>
+                        )}
+                        {plan.steps && plan.steps.length > 0 && (
+                          <div>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-400 mb-2">Steps</h3>
+                            <ol className="space-y-3">
+                              {plan.steps.map((step: { order: number; type: string; filePath: string; description: string; testRequired?: boolean }) => (
+                                <li key={step.order} className="flex gap-3">
+                                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold text-violet-300">
+                                    {step.order}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-gray-400">{step.type}</span>
+                                      <span className="truncate font-mono text-xs text-sky-300">{step.filePath}</span>
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-400">{step.description}</p>
+                                  </div>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+                        {plan.testsToWrite && plan.testsToWrite.length > 0 && (
+                          <div>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-400 mb-2">Tests to Write</h3>
+                            <ul className="space-y-1">
+                              {plan.testsToWrite.map((t: string, i: number) => (
+                                <li key={i} className="flex gap-2 text-xs text-gray-400">
+                                  <span className="mt-1 h-1 w-1 flex-none rounded-full bg-violet-400" />
+                                  {t}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {(plan.complexityLevel || plan.estimatedMinutes) && (
+                          <div className="flex gap-4 border-t border-white/5 pt-3">
+                            {plan.complexityLevel && (
+                              <div className="text-xs">
+                                <span className="text-gray-600">Complexity </span>
+                                <span className="font-medium text-gray-300">{plan.complexityLevel}</span>
+                              </div>
+                            )}
+                            {plan.estimatedMinutes && (
+                              <div className="text-xs">
+                                <span className="text-gray-600">Est. time </span>
+                                <span className="font-medium text-gray-300">{plan.estimatedMinutes} min</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              ) : issue.status === 'ANALYZING' ? (
+                <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-6">
+                  <div className="flex items-center gap-2 text-sm text-sky-300">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    AI is analyzing and will generate a plan shortly…
+                  </div>
+                </div>
               ) : null}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-4">
-              {/* Approval panel — shown when status is PLAN_READY */}
-              {issue.status === "PLAN_READY" && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardHeader>
-                    <CardTitle className="text-base">Phê duyệt kế hoạch</CardTitle>
-                    <p className="text-xs text-gray-600">
-                      AI đã phân tích xong. Vui lòng xem xét kế hoạch và phê duyệt để tiếp tục.
+              {/* Approval panel */}
+              {issue.status === 'PLAN_READY' && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
+                  <h2 className="text-sm font-semibold text-amber-300">Approve Plan</h2>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Review the AI plan above, then approve to start coding.
+                  </p>
+
+                  {actionError && (
+                    <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                      {actionError}
                     </p>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {actionError && (
-                      <p className="text-xs text-red-600">{actionError}</p>
-                    )}
+                  )}
+
+                  <div className="mt-4 space-y-2">
                     {!showRejectForm ? (
                       <>
-                        <Button
-                          className="w-full"
-                          size="sm"
+                        <button
                           onClick={handleApprove}
                           disabled={approving}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-60 transition-colors"
                         >
                           {approving ? (
-                            <Loader className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <CheckCircle className="h-4 w-4 mr-2" />
+                            <CheckCircle2 className="h-4 w-4" />
                           )}
-                          Phê duyệt
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          className="w-full"
-                          size="sm"
+                          Approve & Start Coding
+                        </button>
+                        <button
                           onClick={() => setShowRejectForm(true)}
+                          className="flex w-full items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 hover:bg-red-500/20 transition-colors"
                         >
-                          Từ chối
-                        </Button>
+                          Reject Plan
+                        </button>
                       </>
                     ) : (
                       <div className="space-y-2">
                         <textarea
                           rows={3}
-                          placeholder="Lý do từ chối..."
+                          placeholder="Reason for rejection…"
                           value={rejectReason}
                           onChange={(e) => setRejectReason(e.target.value)}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                          className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-200 placeholder:text-gray-600 focus:border-red-500/50 focus:outline-none"
                         />
-                        <Button
-                          variant="destructive"
-                          className="w-full"
-                          size="sm"
+                        <button
                           onClick={handleReject}
                           disabled={rejecting || !rejectReason.trim()}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-400 disabled:opacity-60 transition-colors"
                         >
-                          {rejecting && <Loader className="h-3 w-3 animate-spin mr-1" />}
-                          Xác nhận từ chối
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          size="sm"
+                          {rejecting && <Loader2 className="h-4 w-4 animate-spin" />}
+                          Confirm Rejection
+                        </button>
+                        <button
                           onClick={() => setShowRejectForm(false)}
+                          className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-xs text-gray-400 hover:border-white/20 hover:text-gray-200 transition-colors"
                         >
-                          Hủy
-                        </Button>
+                          Cancel
+                        </button>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
 
               {/* Cost estimate */}
               {(issue.estimatedCost != null || issue.estimatedTokens != null) && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <CardTitle className="text-base">Ước tính chi phí</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
+                <div className="rounded-xl border border-white/5 bg-gray-900 p-5">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-emerald-400" />
+                    <h2 className="text-sm font-semibold text-gray-100">Cost Estimate</h2>
+                  </div>
+                  <div className="mt-4 space-y-2">
                     {issue.estimatedTokens != null && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Token AI</span>
-                        <span className="font-medium">
+                        <span className="text-gray-500">Tokens</span>
+                        <span className="font-medium text-gray-200">
                           ~{issue.estimatedTokens.toLocaleString()}
                         </span>
                       </div>
                     )}
                     {issue.estimatedMinutes != null && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Thời gian ước tính</span>
-                        <span className="font-medium">~{issue.estimatedMinutes} phút</span>
+                        <span className="text-gray-500">Est. time</span>
+                        <span className="font-medium text-gray-200">
+                          ~{issue.estimatedMinutes} min
+                        </span>
                       </div>
                     )}
                     {issue.estimatedCost != null && (
-                      <div className="flex justify-between text-sm font-medium border-t pt-2">
-                        <span className="text-gray-700">Chi phí dự kiến</span>
-                        <span className="text-green-600">
+                      <div className="flex justify-between border-t border-white/5 pt-2 text-sm font-semibold">
+                        <span className="text-gray-300">Total</span>
+                        <span className="text-emerald-400">
                           ${issue.estimatedCost.toFixed(4)}
                         </span>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
 
-              {/* Timeline */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Tiến trình</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ol className="space-y-3">
-                    {TIMELINE_STEPS.map(({ status, label }) => {
-                      const state = getStepState(status, issue.status);
-                      return (
-                        <li key={status} className="flex items-center gap-3">
-                          {state === "done" ? (
-                            <CheckCircle className="h-4 w-4 flex-shrink-0 text-green-500" />
-                          ) : state === "active" ? (
-                            <CheckCircle className="h-4 w-4 flex-shrink-0 text-blue-500" />
-                          ) : (
-                            <Circle className="h-4 w-4 flex-shrink-0 text-gray-300" />
-                          )}
-                          <span
-                            className={`text-sm ${
-                              state === "active"
-                                ? "font-medium text-blue-700"
-                                : state === "done"
-                                ? "text-gray-700"
-                                : "text-gray-400"
-                            }`}
-                          >
-                            {label}
-                          </span>
-                        </li>
-                      );
-                    })}
-                    {issue.status === "REJECTED" && (
-                      <li className="flex items-center gap-3">
-                        <CheckCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
-                        <span className="text-sm font-medium text-red-700">Đã từ chối</span>
+              {/* Progress timeline */}
+              <div className="rounded-xl border border-white/5 bg-gray-900 p-5">
+                <h2 className="text-sm font-semibold text-gray-100">Progress</h2>
+                <ol className="mt-4 space-y-3">
+                  {TIMELINE_STEPS.map(({ status, label }) => {
+                    const state = getStepState(status, issue.status)
+                    return (
+                      <li key={status} className="flex items-center gap-3">
+                        {state === 'done' ? (
+                          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-400" />
+                        ) : state === 'active' ? (
+                          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-sky-400" />
+                        ) : (
+                          <Circle className="h-4 w-4 flex-shrink-0 text-gray-700" />
+                        )}
+                        <span
+                          className={`text-sm ${
+                            state === 'active'
+                              ? 'font-medium text-sky-300'
+                              : state === 'done'
+                              ? 'text-gray-300'
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          {label}
+                        </span>
                       </li>
-                    )}
-                  </ol>
-                </CardContent>
-              </Card>
+                    )
+                  })}
+                  {issue.status === 'REJECTED' && (
+                    <li className="flex items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-red-400" />
+                      <span className="text-sm font-medium text-red-400">Rejected</span>
+                    </li>
+                  )}
+                </ol>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

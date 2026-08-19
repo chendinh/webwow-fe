@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Topbar } from "@/components/layout/topbar";
 import { ProjectTabs } from "@/components/layout/project-tabs";
 import { Button } from "@/components/ui/button";
 import { Network, Loader, RefreshCw } from "lucide-react";
@@ -74,7 +73,6 @@ export default function ProjectArchitecturePage({
 
   return (
     <div className="flex flex-col h-full">
-      <Topbar title="Kiến trúc hệ thống" />
       <ProjectTabs projectId={params.projectId} activeTab="architecture" />
       <div className="flex-1 p-6">
         <div className="space-y-6">

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Topbar } from "@/components/layout/topbar";
 import {
   ArrowLeft,
   CheckCircle,
@@ -244,22 +243,16 @@ export default function AITaskDetailPage({
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Chi tiết AI Task" />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="flex flex-col h-full">
-        <Topbar title="Chi tiết AI Task" />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-500">Không tìm thấy task.</p>
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-gray-500">Không tìm thấy task.</p>
       </div>
     );
   }
@@ -273,7 +266,6 @@ export default function AITaskDetailPage({
 
   return (
     <div className="flex flex-col h-full">
-      <Topbar title="Chi tiết AI Task" />
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Back + status header */}

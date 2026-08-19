@@ -1,133 +1,138 @@
-"use client";
+'use client'
 
-import { useRouter } from "next/navigation";
-import { ChevronDown, LogOut, User, Building2 } from "lucide-react";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useAuthStore } from "@/stores/auth.store";
-import { useOrgStore } from "@/stores/org.store";
+import { useRouter } from 'next/navigation'
+import { ChevronDown, LogOut, User, Building2, Bell } from 'lucide-react'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { useAuthStore } from '@/stores/auth.store'
+import { useOrgStore } from '@/stores/org.store'
+import { useAuth } from '@/lib/hooks/use-auth'
 
 interface TopbarProps {
-  /** Optional page title — kept for backward-compatibility with existing page imports. */
-  title?: string;
+  title?: string
 }
 
 export function Topbar({ title }: TopbarProps = {}) {
-  const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const activeOrgSlug = useOrgStore((s) => s.activeOrgSlug);
+  const router = useRouter()
+  const user = useAuthStore((s) => s.user)
+  const activeOrgSlug = useOrgStore((s) => s.activeOrgSlug)
+  const { logout } = useAuth()
 
   const initials = user?.name
     ? user.name
-        .split(" ")
+        .split(' ')
         .map((w) => w[0])
-        .join("")
+        .join('')
         .slice(0, 2)
         .toUpperCase()
-    : user?.email?.[0]?.toUpperCase() ?? "U";
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+    : user?.email?.[0]?.toUpperCase() ?? 'U'
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      {/* Left: optional page title + active org selector */}
-      <div className="flex items-center gap-4">
+    <header className="flex h-14 items-center justify-between border-b border-white/5 bg-gray-900 px-6">
+      {/* Left */}
+      <div className="flex items-center gap-3">
         {title && (
-          <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+          <h1 className="text-sm font-semibold text-gray-100">{title}</h1>
         )}
 
-        {/* Active org selector dropdown */}
+        {/* Org selector */}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-              <Building2 className="h-4 w-4 text-gray-500" />
-              <span>{activeOrgSlug ?? "Chọn tổ chức"}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+            <button className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500">
+              <Building2 className="h-3.5 w-3.5 text-gray-500" />
+              <span>{activeOrgSlug ?? 'Select org'}</span>
+              <ChevronDown className="h-3 w-3 text-gray-600" />
             </button>
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Portal>
             <DropdownMenu.Content
-              className="z-50 min-w-[180px] rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+              className="z-50 min-w-[180px] rounded-xl border border-white/10 bg-gray-900 py-1 shadow-xl"
               sideOffset={4}
             >
               {activeOrgSlug && (
                 <DropdownMenu.Item
-                  className="flex cursor-default select-none items-center px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-gray-50"
+                  className="flex cursor-default select-none items-center px-3 py-2 text-sm text-gray-300 outline-none"
                   disabled
                 >
-                  <Building2 className="mr-2 h-4 w-4 text-blue-600" />
+                  <Building2 className="mr-2 h-4 w-4 text-sky-400" />
                   <span className="font-medium">{activeOrgSlug}</span>
                 </DropdownMenu.Item>
               )}
-              <DropdownMenu.Separator className="my-1 h-px bg-gray-100" />
+              <DropdownMenu.Separator className="my-1 h-px bg-white/5" />
               <DropdownMenu.Item
-                className="flex cursor-pointer select-none items-center px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-gray-50"
-                onSelect={() => router.push("/settings/organization")}
+                className="flex cursor-pointer select-none items-center px-3 py-2 text-sm text-gray-400 outline-none data-[highlighted]:bg-white/5 data-[highlighted]:text-gray-100"
+                onSelect={() => router.push('/settings/organization')}
               >
-                Quản lý tổ chức
+                Manage organization
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
 
-      {/* Right: user menu dropdown */}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-              {initials}
-            </div>
-            <div className="hidden sm:block text-left">
-              <p className="text-sm font-medium text-gray-900 leading-tight">
-                {user?.name ?? "User"}
-              </p>
-              <p className="text-xs text-gray-500 leading-tight max-w-[140px] truncate">
-                {user?.email ?? ""}
-              </p>
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
-          </button>
-        </DropdownMenu.Trigger>
+      {/* Right */}
+      <div className="flex items-center gap-2">
+        {/* Notification bell — placeholder for future */}
+        <button
+          className="rounded-lg p-1.5 text-gray-600 hover:bg-white/5 hover:text-gray-300 transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell className="h-4 w-4" />
+        </button>
 
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            className="z-50 min-w-[200px] rounded-md border border-gray-200 bg-white py-1 shadow-lg"
-            align="end"
-            sideOffset={4}
-          >
-            {/* User info header */}
-            <div className="px-3 py-2 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-900">
-                {user?.name ?? "User"}
-              </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
-            </div>
+        {/* User menu */}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-500/20 text-xs font-bold text-sky-300 ring-1 ring-sky-500/30">
+                {initials}
+              </div>
+              <div className="hidden text-left sm:block">
+                <p className="text-xs font-medium leading-tight text-gray-200">
+                  {user?.name ?? 'User'}
+                </p>
+                <p className="max-w-[120px] truncate text-[10px] leading-tight text-gray-600">
+                  {user?.email ?? ''}
+                </p>
+              </div>
+              <ChevronDown className="h-3 w-3 text-gray-600" />
+            </button>
+          </DropdownMenu.Trigger>
 
-            <DropdownMenu.Item
-              className="flex cursor-pointer select-none items-center px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-gray-50"
-              onSelect={() => router.push("/settings/profile")}
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              className="z-50 min-w-[200px] rounded-xl border border-white/10 bg-gray-900 py-1 shadow-xl"
+              align="end"
+              sideOffset={4}
             >
-              <User className="mr-2 h-4 w-4" />
-              Hồ sơ cá nhân
-            </DropdownMenu.Item>
+              <div className="border-b border-white/5 px-3 py-2">
+                <p className="text-sm font-medium text-gray-200">
+                  {user?.name ?? 'User'}
+                </p>
+                <p className="truncate text-xs text-gray-600">{user?.email ?? ''}</p>
+              </div>
 
-            <DropdownMenu.Separator className="my-1 h-px bg-gray-100" />
+              <DropdownMenu.Item
+                className="flex cursor-pointer select-none items-center px-3 py-2 text-sm text-gray-400 outline-none data-[highlighted]:bg-white/5 data-[highlighted]:text-gray-100"
+                onSelect={() => router.push('/settings/profile')}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenu.Item>
 
-            <DropdownMenu.Item
-              className="flex cursor-pointer select-none items-center px-3 py-2 text-sm text-red-600 outline-none data-[highlighted]:bg-red-50"
-              onSelect={handleLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Đăng xuất
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+              <DropdownMenu.Separator className="my-1 h-px bg-white/5" />
+
+              <DropdownMenu.Item
+                className="flex cursor-pointer select-none items-center px-3 py-2 text-sm text-red-400 outline-none data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-300"
+                onSelect={logout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      </div>
     </header>
-  );
+  )
 }
