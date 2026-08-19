@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* Global dark base — overridden per-section where needed */
+  /* Global base styles */
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -28,5 +28,34 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Light mode styles */
+  .light-mode {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --scrollbar-thumb-color: rgba(0, 0, 0, 0.08);
+    --scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.15);
+  }
+
+  /* Dark mode styles */
+  .dark-mode {
+    --bg-color: #000000;
+    --text-color: #ffffff;
+    --scrollbar-thumb-color: rgba(255, 255, 255, 0.08);
+    --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Apply theme variables */
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb-color);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover-color);
   }
 }
