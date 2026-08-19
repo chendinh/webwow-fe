@@ -2,7 +2,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
+import { useOrgStore } from "@/stores/org.store";
 import { authApi } from "@/lib/api/auth.api";
+import { organizationsApi } from "@/lib/api/organizations.api";
+
+async function fetchAndSetFirstOrg() {
+  try {
+    const res = await organizationsApi.list();
+    const orgs = res.data;
+    if (orgs && orgs.length > 0) {
+      const first = orgs[0];
+      useOrgStore.getState().setActiveOrg(first.id, first.slug);
+    }
+  } catch {
+    // ignore — org can be set later
+  }
+}
 
 export function useAuth() {
   const router = useRouter();
@@ -18,6 +33,7 @@ export function useAuth() {
       const { data } = await authApi.login(email, password);
       setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
+      await fetchAndSetFirstOrg();
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = extractErrorMessage(err, "Đăng nhập thất bại");
@@ -39,6 +55,7 @@ export function useAuth() {
       const { data } = await authApi.register(email, password, name);
       setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
+      await fetchAndSetFirstOrg();
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = extractErrorMessage(err, "Đăng ký thất bại");

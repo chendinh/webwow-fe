@@ -13,20 +13,20 @@ export interface LoginResponse {
 
 export const authApi = {
   login: (email: string, password: string) =>
-    apiClient.post<LoginResponse>("/auth/login", { email, password }),
+    apiClient.post<LoginResponse>("/api/auth/login", { email, password }),
 
   register: (email: string, password: string, name?: string) =>
-    apiClient.post<LoginResponse>("/auth/register", { email, password, name }),
+    apiClient.post<LoginResponse>("/api/auth/register", { email, password, name }),
 
   logout: (refreshToken: string) =>
-    apiClient.post("/auth/logout", { refreshToken }),
+    apiClient.post("/api/auth/logout", { refreshToken }),
 
   refresh: (refreshToken: string) =>
-    apiClient.post<{ accessToken: string }>("/auth/refresh", { refreshToken }),
+    apiClient.post<{ accessToken: string }>("/api/auth/refresh", { refreshToken }),
 
   forgotPassword: (email: string) =>
-    apiClient.post("/auth/forgot-password", { email }),
+    apiClient.post("/api/auth/forgot-password", { email }),
 
   resetPassword: (token: string, password: string) =>
-    apiClient.post("/auth/reset-password", { token, password }),
+    apiClient.post("/api/auth/reset-password", { token, password }),
 };

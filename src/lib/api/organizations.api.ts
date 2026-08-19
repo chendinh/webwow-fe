@@ -1,5 +1,15 @@
 import { apiClient } from "./client";
 
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  usageCap: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateOrganizationDto {
   name: string;
   slug?: string;
@@ -12,40 +22,40 @@ export interface UpdateOrganizationDto {
 
 export const organizationsApi = {
   create: (data: CreateOrganizationDto) =>
-    apiClient.post("/organizations", data),
+    apiClient.post<Organization>("/api/api/organizations", data),
 
-  list: () => apiClient.get("/organizations"),
+  list: () => apiClient.get<Organization[]>("/api/api/organizations"),
 
   getById: (organizationId: string) =>
-    apiClient.get(`/organizations/${organizationId}`),
+    apiClient.get<Organization>(`/api/api/organizations/${organizationId}`),
 
   update: (organizationId: string, data: UpdateOrganizationDto) =>
-    apiClient.patch(`/organizations/${organizationId}`, data),
+    apiClient.patch<Organization>(`/api/api/organizations/${organizationId}`, data),
 
   delete: (organizationId: string) =>
-    apiClient.delete(`/organizations/${organizationId}`),
+    apiClient.delete(`/api/api/organizations/${organizationId}`),
 
   getMembers: (organizationId: string) =>
-    apiClient.get(`/organizations/${organizationId}/members`),
+    apiClient.get(`/api/api/organizations/${organizationId}/members`),
 
   inviteMember: (
     organizationId: string,
     email: string,
     role: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER"
   ) =>
-    apiClient.post(`/organizations/${organizationId}/members`, { email, role }),
+    apiClient.post(`/api/api/organizations/${organizationId}/members`, { email, role }),
 
   updateMemberRole: (
     organizationId: string,
     memberId: string,
     role: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER"
   ) =>
-    apiClient.patch(`/organizations/${organizationId}/members/${memberId}`, {
+    apiClient.patch(`/api/api/organizations/${organizationId}/members/${memberId}`, {
       role,
     }),
 
   removeMember: (organizationId: string, memberId: string) =>
     apiClient.delete(
-      `/organizations/${organizationId}/members/${memberId}`
+      `/api/api/organizations/${organizationId}/members/${memberId}`
     ),
 };

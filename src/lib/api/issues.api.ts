@@ -15,39 +15,44 @@ export interface UpdateIssueDto extends Partial<CreateIssueDto> {
 export const issuesApi = {
   create: (projectId: string, organizationId: string, data: CreateIssueDto) =>
     apiClient.post(
-      `/issues?projectId=${projectId}&organizationId=${organizationId}`,
+      `/api/api/projects/${projectId}/issues?organizationId=${organizationId}`,
       data
     ),
 
   list: (projectId: string, organizationId: string) =>
     apiClient.get(
-      `/issues?projectId=${projectId}&organizationId=${organizationId}`
+      `/api/api/projects/${projectId}/issues?organizationId=${organizationId}`
     ),
 
-  getById: (issueId: string, organizationId: string) =>
-    apiClient.get(`/issues/${issueId}?organizationId=${organizationId}`),
+  getById: (projectId: string, issueId: string, organizationId: string) =>
+    apiClient.get(
+      `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
+    ),
 
   update: (
+    projectId: string,
     issueId: string,
     organizationId: string,
     data: UpdateIssueDto
   ) =>
     apiClient.patch(
-      `/issues/${issueId}?organizationId=${organizationId}`,
+      `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`,
       data
     ),
 
-  delete: (issueId: string, organizationId: string) =>
-    apiClient.delete(`/issues/${issueId}?organizationId=${organizationId}`),
+  delete: (projectId: string, issueId: string, organizationId: string) =>
+    apiClient.delete(
+      `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
+    ),
 
-  addComment: (issueId: string, organizationId: string, content: string) =>
+  addComment: (projectId: string, issueId: string, organizationId: string, content: string) =>
     apiClient.post(
-      `/issues/${issueId}/comments?organizationId=${organizationId}`,
+      `/api/api/projects/${projectId}/issues/${issueId}/comments?organizationId=${organizationId}`,
       { content }
     ),
 
-  listComments: (issueId: string, organizationId: string) =>
+  listComments: (projectId: string, issueId: string, organizationId: string) =>
     apiClient.get(
-      `/issues/${issueId}/comments?organizationId=${organizationId}`
+      `/api/api/projects/${projectId}/issues/${issueId}/comments?organizationId=${organizationId}`
     ),
 };
