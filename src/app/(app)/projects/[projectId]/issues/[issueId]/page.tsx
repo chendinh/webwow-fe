@@ -195,6 +195,7 @@ export default function IssueDetailPage({
         pollingRef.current = null
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [issue?.status, activeTask?.status, fetchData])
 
   // ── Cleanup on unmount ──────────────────────────────────────────────────────

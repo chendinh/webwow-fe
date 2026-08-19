@@ -9,6 +9,27 @@ export interface CreateProjectDto {
   defaultBranch?: string;
 }
 
+export interface HealthIssue {
+  category: 'build' | 'lint' | 'type' | 'security' | 'dependency' | 'config';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  title: string;
+  detail: string;
+  filePath?: string;
+  line?: number;
+  suggestedFix?: string;
+  canAutoFix: boolean;
+}
+
+export interface HealthCheckResult {
+  projectId: string;
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  issues: HealthIssue[];
+  summary: string;
+  scannedAt: string;
+  durationMs: number;
+}
+
 export const projectsApi = {
   create: (organizationId: string, data: CreateProjectDto) =>
     apiClient.post(`/api/api/projects?organizationId=${organizationId}`, data),
@@ -28,6 +49,18 @@ export const projectsApi = {
     apiClient.post(
       `/api/api/projects/${projectId}/reanalyze?organizationId=${organizationId}`
     ),
+
+  triggerHealthCheck: (projectId: string, organizationId: string) =>
+    apiClient.post(
+      `/api/api/projects/${projectId}/health-check?organizationId=${organizationId}`
+    ),
+
+  getHealthCheck: (projectId: string, organizationId: string) =>
+    apiClient.get<{
+      status: string | null;
+      result: HealthCheckResult | null;
+      checkedAt: string | null;
+    }>(`/api/api/projects/${projectId}/health-check?organizationId=${organizationId}`),
 
   listRepos: (organizationId: string) =>
     apiClient.get(`/api/github/repos?organizationId=${organizationId}`),
