@@ -33,7 +33,7 @@ export function Breadcrumb() {
   const pathname = usePathname();
 
   // Split and filter out empty segments
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = (pathname ?? '').split("/").filter(Boolean);
 
   if (segments.length === 0) return null;
 
