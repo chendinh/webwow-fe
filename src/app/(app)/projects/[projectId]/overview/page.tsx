@@ -126,17 +126,20 @@ function HealthIssueCard({
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {issue.canAutoFix && !created && (
+          {!created ? (
             <button
               onClick={handleCreateTask}
               disabled={creating}
-              className="flex items-center gap-1 rounded-lg bg-sky-500/20 border border-sky-500/30 px-2.5 py-1.5 text-xs font-medium text-sky-300 hover:bg-sky-500/30 disabled:opacity-60 transition-colors"
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium disabled:opacity-60 transition-colors border ${
+                issue.canAutoFix
+                  ? 'bg-sky-500/20 border-sky-500/30 text-sky-300 hover:bg-sky-500/30'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'
+              }`}
             >
               {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-              Fix
+              {issue.canAutoFix ? 'AI Fix' : 'Create Task'}
             </button>
-          )}
-          {created && (
+          ) : (
             <span className="flex items-center gap-1 text-xs text-emerald-400">
               <CheckCircle2 className="h-3 w-3" /> Task created
             </span>

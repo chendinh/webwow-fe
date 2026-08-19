@@ -62,6 +62,11 @@ export const projectsApi = {
       checkedAt: string | null;
     }>(`/api/api/projects/${projectId}/health-check?organizationId=${organizationId}`),
 
+  deployToMain: (projectId: string, organizationId: string) =>
+    apiClient.post<{ prUrl: string; prNumber: number }>(
+      `/api/api/projects/${projectId}/deploy-to-main?organizationId=${organizationId}`
+    ),
+
   listRepos: (organizationId: string) =>
     apiClient.get(`/api/github/repos?organizationId=${organizationId}`),
 
