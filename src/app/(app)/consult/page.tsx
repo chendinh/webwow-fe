@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useOrgStore } from '@/stores/org.store'
 import { projectsApi } from '@/lib/api/projects.api'
-import { issuesApi, Issue } from '@/lib/api/issues.api'
+import { issuesApi, Issue, ImplementationOption } from '@/lib/api/issues.api'
 import { cn } from '@/lib/utils/cn'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ interface Project {
 }
 
 type MessageRole = 'user' | 'bot'
-type BotMessageType = 'text' | 'thinking' | 'plan'
+type BotMessageType = 'text' | 'thinking' | 'plan' | 'options'
 
 interface UserMessage {
   id: string
@@ -96,6 +96,109 @@ function StatusBadge({ status }: { status: string }) {
     >
       {STATUS_LABELS[status] ?? status}
     </span>
+  )
+}
+
+function OptionsBubble({
+  issue,
+  projectId,
+  activeOrgId,
+  onOptionSelected,
+}: {
+  issue: Issue
+  projectId: string
+  activeOrgId: string
+  onOptionSelected: (updatedIssue: Issue) => void
+}) {
+  const [selecting, setSelecting] = useState<string | null>(null)
+
+  const handleSelect = async (optionId: string) => {
+    setSelecting(optionId)
+    try {
+      const { data } = await issuesApi.selectOption(projectId, issue.id, activeOrgId, optionId)
+      onOptionSelected(data as Issue)
+    } catch {
+      setSelecting(null)
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/20">
+        <Bot className="h-4 w-4 text-sky-400" />
+      </div>
+      <div className="max-w-[90%] w-full space-y-3">
+        {/* Plain diagnosis */}
+        {issue.plainDiagnosis && (
+          <div className="rounded-2xl rounded-tl-sm border border-white/5 bg-gray-900 px-4 py-3">
+            <p className="text-sm text-gray-200 leading-relaxed">{issue.plainDiagnosis}</p>
+          </div>
+        )}
+
+        {/* Clarifying questions */}
+        {issue.clarifyingQuestions && issue.clarifyingQuestions.length > 0 && (
+          <div className="rounded-2xl rounded-tl-sm border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+            <p className="text-xs font-semibold text-amber-300 mb-2">💡 Để làm tốt hơn, tôi muốn biết thêm:</p>
+            <ul className="space-y-1">
+              {issue.clarifyingQuestions.map((q, i) => (
+                <li key={i} className="text-xs text-gray-400">• {q}</li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs text-gray-600">Bạn có thể chọn phương án trước, tôi sẽ làm theo yêu cầu đó.</p>
+          </div>
+        )}
+
+        {/* Options */}
+        <div className="rounded-2xl rounded-tl-sm border border-violet-500/20 bg-violet-500/5 px-4 py-3">
+          <p className="text-sm font-semibold text-violet-300 mb-3">
+            Có {issue.implementationOptions?.length} cách thực hiện. Bạn muốn dùng cách nào?
+          </p>
+          <div className="space-y-3">
+            {issue.implementationOptions?.map((opt: ImplementationOption) => (
+              <div
+                key={opt.id}
+                className={`rounded-xl border p-4 ${
+                  opt.recommended ? 'border-violet-500/40 bg-violet-500/10' : 'border-white/5 bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <p className="text-sm font-semibold text-gray-100">{opt.plainTitle}</p>
+                  {opt.recommended && (
+                    <span className="rounded-full bg-violet-500/20 border border-violet-500/30 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+                      ⭐ Đề xuất
+                    </span>
+                  )}
+                  <span className="text-[10px] text-gray-500">~{opt.estimatedMinutes} phút</span>
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed mb-2">{opt.plainDescription}</p>
+                {(opt.pros.length > 0 || opt.cons.length > 0) && (
+                  <div className="grid grid-cols-2 gap-1 mb-3">
+                    {opt.pros.slice(0, 2).map((p, i) => (
+                      <p key={i} className="text-[11px] text-emerald-400">✓ {p}</p>
+                    ))}
+                    {opt.cons.slice(0, 1).map((c, i) => (
+                      <p key={i} className="text-[11px] text-gray-500">✗ {c}</p>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => handleSelect(opt.id)}
+                  disabled={selecting !== null}
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                    opt.recommended
+                      ? 'bg-violet-500 text-white hover:bg-violet-400'
+                      : 'border border-white/10 text-gray-300 hover:border-white/20 hover:bg-white/5'
+                  }`}
+                >
+                  {selecting === opt.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Chọn cách này
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -312,7 +415,18 @@ export default function ConsultPage() {
         const { data } = await issuesApi.getById(projectId, issueId, activeOrgId)
         const issue = data as Issue
 
-        if (issue.status === 'PLAN_READY' || issue.implementationPlan) {
+        if (issue.status === 'OPTIONS_READY' && issue.implementationOptions && issue.implementationOptions.length > 0) {
+          stopPolling()
+          // Replace thinking bubble with option picker bubble
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === thinkingMsgId
+                ? ({ id: m.id, role: 'bot', type: 'options', issue, projectId } as BotMessage & { projectId: string })
+                : m
+            )
+          )
+          setSubmitting(false)
+        } else if (issue.status === 'PLAN_READY' || issue.implementationPlan) {
           stopPolling()
           // Replace the thinking bubble with the plan bubble
           setMessages(prev =>
@@ -494,6 +608,30 @@ export default function ConsultPage() {
               if (msg.role === 'bot') {
                 if (msg.type === 'thinking') return <ThinkingBubble key={msg.id} />
                 if (msg.type === 'text') return <BotTextBubble key={msg.id} content={msg.content ?? ''} />
+                if (msg.type === 'options') {
+                  const m = msg as BotMessage & { projectId?: string }
+                  return (
+                    <OptionsBubble
+                      key={msg.id}
+                      issue={msg.issue!}
+                      projectId={m.projectId ?? selectedProject?.id ?? ''}
+                      activeOrgId={activeOrgId ?? ''}
+                      onOptionSelected={(updatedIssue) => {
+                        // Replace options bubble with thinking bubble, then poll for plan
+                        const newThinkingId = uid()
+                        setMessages(prev =>
+                          prev.map(m2 =>
+                            m2.id === msg.id
+                              ? ({ id: msg.id, role: 'bot', type: 'thinking' } as BotMessage)
+                              : m2
+                          )
+                        )
+                        setSubmitting(true)
+                        startPolling(m.projectId ?? selectedProject?.id ?? '', updatedIssue.id, msg.id)
+                      }}
+                    />
+                  )
+                }
                 if (msg.type === 'plan') {
                   const m = msg as BotMessage & { projectId?: string }
                   return (
