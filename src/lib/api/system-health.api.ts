@@ -63,5 +63,5 @@ export const systemHealthApi = {
       { solution },
     ),
 
-  getPatterns: () => apiClient.get<FailurePattern[]>('/api/system/patterns'),
+  getPatterns: () => apiClient.get<FailurePattern[]>('/system/patterns'),
 };
