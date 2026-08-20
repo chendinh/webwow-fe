@@ -56,7 +56,8 @@ export default function ProjectArchitecturePage({
     queryFn: () => knowledgeApi.getStatus(params.projectId, activeOrgId!),
     refetchInterval: (query) => {
       const analysisStatus = query.state.data?.data?.analysisStatus;
-      return analysisStatus === "RUNNING" ? 3000 : false;
+      // Keep polling while RUNNING, or while we just triggered (status may lag)
+      return analysisStatus === "RUNNING" || isTriggering ? 3000 : false;
     },
     enabled: !!activeOrgId,
   });
@@ -97,6 +98,8 @@ export default function ProjectArchitecturePage({
 
   const isAnalyzeDisabled = isRunning || isTriggering;
   const isForceDisabled = isTriggering;
+  // Show loading UI immediately on trigger, or when backend reports RUNNING
+  const showRunningUI = isTriggering || isRunning;
 
   return (
     <div className="flex flex-col h-full">
@@ -119,18 +122,21 @@ export default function ProjectArchitecturePage({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleAnalyze}
-                disabled={isAnalyzeDisabled}
-                className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAnalyzeDisabled && !isForceDisabled ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                Phân tích lại
-              </button>
+              {/* Only show incremental analysis after a full analysis has been done */}
+              {(analysisStatus === "COMPLETE" || analysisStatus === "PARTIAL") && (
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzeDisabled}
+                  className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAnalyzeDisabled && !isForceDisabled ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Phân tích thay đổi mới
+                </button>
+              )}
               <button
                 onClick={handleForceAnalyze}
                 disabled={isForceDisabled}
@@ -141,7 +147,7 @@ export default function ProjectArchitecturePage({
                 ) : (
                   <RefreshCw className="h-3.5 w-3.5" />
                 )}
-                Phân tích lại toàn bộ
+                Phân tích toàn bộ dự án
               </button>
             </div>
           </div>
@@ -158,7 +164,7 @@ export default function ProjectArchitecturePage({
           ) : (
             <>
               {/* RUNNING — progress steps */}
-              {isRunning && (
+              {showRunningUI && (
                 <div className="rounded-xl border border-white/5 bg-gray-900">
                   <div className="flex items-center gap-2 border-b border-white/5 px-5 py-4">
                     <Loader2 className="h-4 w-4 animate-spin text-sky-400" />
