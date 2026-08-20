@@ -11,7 +11,7 @@ export interface UsageSummary {
 
 export const usageApi = {
   getCurrent: (organizationId: string) =>
-    apiClient.get<UsageSummary>(`/api/usage?organizationId=${organizationId}`),
+    apiClient.get<UsageSummary>(`/usage?organizationId=${organizationId}`),
   getHistory: (organizationId: string) =>
-    apiClient.get<UsageSummary[]>(`/api/usage/history?organizationId=${organizationId}`),
+    apiClient.get<UsageSummary[]>(`/usage/history?organizationId=${organizationId}`),
 };

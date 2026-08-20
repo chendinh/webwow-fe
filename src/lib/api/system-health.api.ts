@@ -51,15 +51,15 @@ export const systemHealthApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.errorType) query.set('errorType', params.errorType);
     if (params?.framework) query.set('framework', params.framework);
-    return apiClient.get<SystemIssue[]>(`/api/system/issues?${query.toString()}`);
+    return apiClient.get<SystemIssue[]>(`/system/issues?${query.toString()}`);
   },
 
   getStats: (organizationId: string) =>
-    apiClient.get<IssueStats>(`/api/system/issues/stats?organizationId=${organizationId}`),
+    apiClient.get<IssueStats>(`/system/issues/stats?organizationId=${organizationId}`),
 
   resolveIssue: (id: string, solution: string) =>
     apiClient.post<{ success: true; message: string }>(
-      `/api/system/issues/${id}/resolve`,
+      `/system/issues/${id}/resolve`,
       { solution },
     ),
 

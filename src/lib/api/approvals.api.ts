@@ -3,12 +3,12 @@ import { apiClient } from "./client";
 export const approvalsApi = {
   approve: (issueId: string, organizationId: string, ipAddress?: string) =>
     apiClient.post(
-      `/api/issues/${issueId}/approve?organizationId=${organizationId}`,
+      `/issues/${issueId}/approve?organizationId=${organizationId}`,
       { ipAddress }
     ),
   reject: (issueId: string, organizationId: string, reason: string) =>
     apiClient.post(
-      `/api/issues/${issueId}/reject?organizationId=${organizationId}`,
+      `/issues/${issueId}/reject?organizationId=${organizationId}`,
       { reason }
     ),
 };

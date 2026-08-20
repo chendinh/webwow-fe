@@ -22,10 +22,10 @@ export const activityApi = {
   list: (organizationId: string, projectId?: string) => {
     const params = new URLSearchParams({ organizationId });
     if (projectId) params.set("projectId", projectId);
-    return apiClient.get<ActivityLogEntry[]>(`/api/activity?${params.toString()}`);
+    return apiClient.get<ActivityLogEntry[]>(`/activity?${params.toString()}`);
   },
   listByTask: (taskId: string, organizationId: string) =>
     apiClient.get<ActivityLogEntry[]>(
-      `/api/ai-tasks/${taskId}/logs?organizationId=${organizationId}`
+      `/ai-tasks/${taskId}/logs?organizationId=${organizationId}`
     ),
 };

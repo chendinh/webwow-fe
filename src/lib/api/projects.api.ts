@@ -32,27 +32,27 @@ export interface HealthCheckResult {
 
 export const projectsApi = {
   create: (organizationId: string, data: CreateProjectDto) =>
-    apiClient.post(`/api/projects?organizationId=${organizationId}`, data),
+    apiClient.post(`/projects?organizationId=${organizationId}`, data),
 
   list: (organizationId: string) =>
-    apiClient.get(`/api/projects?organizationId=${organizationId}`),
+    apiClient.get(`/projects?organizationId=${organizationId}`),
 
   getById: (projectId: string, organizationId: string) =>
-    apiClient.get(`/api/projects/${projectId}?organizationId=${organizationId}`),
+    apiClient.get(`/projects/${projectId}?organizationId=${organizationId}`),
 
   getAnalysis: (projectId: string, organizationId: string) =>
     apiClient.get(
-      `/api/projects/${projectId}/analysis?organizationId=${organizationId}`
+      `/projects/${projectId}/analysis?organizationId=${organizationId}`
     ),
 
   reanalyze: (projectId: string, organizationId: string) =>
     apiClient.post(
-      `/api/projects/${projectId}/reanalyze?organizationId=${organizationId}`
+      `/projects/${projectId}/reanalyze?organizationId=${organizationId}`
     ),
 
   triggerHealthCheck: (projectId: string, organizationId: string) =>
     apiClient.post(
-      `/api/projects/${projectId}/health-check?organizationId=${organizationId}`
+      `/projects/${projectId}/health-check?organizationId=${organizationId}`
     ),
 
   getHealthCheck: (projectId: string, organizationId: string) =>
@@ -60,18 +60,18 @@ export const projectsApi = {
       status: string | null;
       result: HealthCheckResult | null;
       checkedAt: string | null;
-    }>(`/api/projects/${projectId}/health-check?organizationId=${organizationId}`),
+    }>(`/projects/${projectId}/health-check?organizationId=${organizationId}`),
 
   deployToMain: (projectId: string, organizationId: string) =>
     apiClient.post<{ prUrl: string; prNumber: number }>(
-      `/api/projects/${projectId}/deploy-to-main?organizationId=${organizationId}`
+      `/projects/${projectId}/deploy-to-main?organizationId=${organizationId}`
     ),
 
   listRepos: (organizationId: string) =>
-    apiClient.get(`/api/github/repos?organizationId=${organizationId}`),
+    apiClient.get(`/github/repos?organizationId=${organizationId}`),
 
   listBranches: (owner: string, repo: string, organizationId: string) =>
     apiClient.get(
-      `/api/github/repos/${owner}/${repo}/branches?organizationId=${organizationId}`
+      `/github/repos/${owner}/${repo}/branches?organizationId=${organizationId}`
     ),
 };

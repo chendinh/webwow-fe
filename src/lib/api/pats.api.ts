@@ -26,5 +26,5 @@ export const patsApi = {
   create: (name: string, expiresInDays?: number) =>
     apiClient.post<CreatePATResponse>('/api/auth/tokens', { name, expiresInDays }),
 
-  revoke: (tokenId: string) => apiClient.delete(`/api/auth/tokens/${tokenId}`),
+  revoke: (tokenId: string) => apiClient.delete(`/auth/tokens/${tokenId}`),
 };
