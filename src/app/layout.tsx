@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Providers } from '@/components/providers'
 
 export const metadata: Metadata = {
   title: 'WebWow — AI IT Team that codes for you',
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="bg-gray-950">
-      <body className="bg-gray-950 text-gray-100">{children}</body>
+      <body className="bg-gray-950 text-gray-100">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }
