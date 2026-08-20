@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "knowledgeBranch": "ai/architecture",
+  "sourceBranch": "main",
+  "sourceCommit": "8f26f24f8e2d219c80b80b9446329373a2254318",
+  "analyzedAt": "2026-08-20T08:06:00.911Z",
+  "documents": {
+    "OVERVIEW.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "PROJECT.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "ARCHITECTURE.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "MODULES.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "API.md": {
+      "status": "not_applicable",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "DATABASE.md": {
+      "status": "not_applicable",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "DEPENDENCIES.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "CONVENTIONS.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "BUSINESS_RULES.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    },
+    "FILE_INDEX.md": {
+      "status": "complete",
+      "lastUpdatedCommit": "8f26f24f8e2d219c80b80b9446329373a2254318"
+    }
+  }
+}
