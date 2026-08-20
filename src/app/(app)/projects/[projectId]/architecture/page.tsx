@@ -49,8 +49,9 @@ export default function ProjectArchitecturePage({
 }) {
   const activeOrgId = useOrgStore((s) => s.activeOrgId);
   const [isTriggering, setIsTriggering] = useState(false);
+  const [forceOverride, setForceOverride] = useState(false);
 
-  const { data: statusResponse, isLoading } = useQuery({
+  const { data: statusResponse, isLoading, refetch } = useQuery({
     queryKey: ["knowledge-status", params.projectId, activeOrgId],
     queryFn: () => knowledgeApi.getStatus(params.projectId, activeOrgId!),
     refetchInterval: (query) => {
@@ -62,13 +63,15 @@ export default function ProjectArchitecturePage({
 
   const status = statusResponse?.data;
   const analysisStatus = status?.analysisStatus;
-  const isRunning = analysisStatus === "RUNNING";
+  const isRunning = analysisStatus === "RUNNING" && !forceOverride;
 
   const handleAnalyze = async () => {
-    if (!activeOrgId || isRunning) return;
+    if (!activeOrgId) return;
     setIsTriggering(true);
+    setForceOverride(false);
     try {
       await knowledgeApi.analyze(params.projectId, activeOrgId);
+      await refetch();
     } catch (e) {
       console.error("Analyze failed", e);
     } finally {
@@ -77,18 +80,25 @@ export default function ProjectArchitecturePage({
   };
 
   const handleForceAnalyze = async () => {
-    if (!activeOrgId || isRunning) return;
+    if (!activeOrgId) return;
     setIsTriggering(true);
+    setForceOverride(true); // allow force even when status shows RUNNING
     try {
       await knowledgeApi.forceAnalyze(params.projectId, activeOrgId);
+      setForceOverride(false);
+      await refetch();
     } catch (e) {
       console.error("Force analyze failed", e);
+      setForceOverride(false);
     } finally {
       setIsTriggering(false);
     }
   };
 
-  const isButtonDisabled = isRunning || isTriggering;
+  // Only disable the incremental analyze button when genuinely running
+  // Force-analyze button is always enabled so user can unstick a stale RUNNING state
+  const isAnalyzeDisabled = isRunning || isTriggering;
+  const isForceDisabled = isTriggering; // never disabled by RUNNING status
 
   return (
     <div className="flex flex-col h-full">
@@ -103,7 +113,7 @@ export default function ProjectArchitecturePage({
               </h2>
               <p className="text-sm text-gray-500 mt-0.5">
                 AI phân tích codebase và duy trì tài liệu kiến trúc trên branch{" "}
-                <code className="text-xs bg-gray-100 px-1 rounded">
+                <code className="text-xs bg-blue-100 px-1 rounded">
                   ai/architecture
                 </code>
                 .
@@ -114,9 +124,9 @@ export default function ProjectArchitecturePage({
                 size="sm"
                 variant="outline"
                 onClick={handleAnalyze}
-                disabled={isButtonDisabled}
+                disabled={isAnalyzeDisabled}
               >
-                {isButtonDisabled ? (
+                {isAnalyzeDisabled && !isForceDisabled ? (
                   <Loader className="h-3 w-3 animate-spin mr-1" />
                 ) : (
                   <RefreshCw className="h-3 w-3 mr-1" />
@@ -127,9 +137,9 @@ export default function ProjectArchitecturePage({
                 size="sm"
                 variant="outline"
                 onClick={handleForceAnalyze}
-                disabled={isButtonDisabled}
+                disabled={isForceDisabled}
               >
-                {isButtonDisabled ? (
+                {isForceDisabled ? (
                   <Loader className="h-3 w-3 animate-spin mr-1" />
                 ) : (
                   <RefreshCw className="h-3 w-3 mr-1" />
@@ -218,9 +228,9 @@ export default function ProjectArchitecturePage({
                         className="mt-6"
                         size="sm"
                         onClick={handleAnalyze}
-                        disabled={isButtonDisabled}
+                        disabled={isAnalyzeDisabled}
                       >
-                        {isButtonDisabled ? (
+                        {isAnalyzeDisabled ? (
                           <Loader className="h-4 w-4 mr-2 animate-spin" />
                         ) : null}
                         Bắt đầu phân tích
