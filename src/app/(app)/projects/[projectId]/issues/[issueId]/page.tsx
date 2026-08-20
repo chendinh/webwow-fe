@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, DollarSign, CheckCircle2, Circle, Loader2,
-  AlertTriangle, GitPullRequest, XCircle, Zap,
+  AlertTriangle, GitPullRequest, XCircle, Zap, Network,
 } from 'lucide-react'
 import { issuesApi, Issue, ImplementationOption } from '@/lib/api/issues.api'
 import { aiTasksApi, AITask } from '@/lib/api/ai-tasks.api'
@@ -17,6 +17,7 @@ import { useOrgStore } from '@/stores/org.store'
 const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Open',
   ANALYZING: 'Analyzing',
+  ANALYSIS_FAILED: 'Cần kiến trúc AI',
   OPTIONS_READY: 'Chọn phương án',
   PLAN_READY: 'Plan Ready',
   APPROVED: 'Approved',
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLOR: Record<string, string> = {
   OPEN: 'text-gray-400 bg-white/5',
   ANALYZING: 'text-sky-300 bg-sky-500/10',
+  ANALYSIS_FAILED: 'text-amber-300 bg-amber-500/10',
   OPTIONS_READY: 'text-violet-300 bg-violet-500/10',
   PLAN_READY: 'text-amber-300 bg-amber-500/10',
   APPROVED: 'text-emerald-300 bg-emerald-500/10',
@@ -284,6 +286,19 @@ export default function IssueDetailPage({
   const isCodingActive = activeTask && ACTIVE_TASK_STATUSES.includes(activeTask.status)
   const isPRCreated = activeTask?.status === 'COMPLETED' || (activeTask?.status === 'CREATING_PR')
 
+  // Detect requiresArchitectureSetup from aiDiagnosis
+  const requiresArchitectureSetup = (() => {
+    if (issue.status !== 'ANALYSIS_FAILED') return false
+    try {
+      const parsed = typeof issue.aiDiagnosis === 'string'
+        ? JSON.parse(issue.aiDiagnosis)
+        : issue.aiDiagnosis
+      return parsed?.requiresArchitectureSetup === true
+    } catch {
+      return false
+    }
+  })()
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -304,6 +319,31 @@ export default function IssueDetailPage({
               {STATUS_LABELS[issue.status] ?? issue.status}
             </span>
           </div>
+
+          {/* ── Architecture setup required banner ── */}
+          {requiresArchitectureSetup && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
+              <div className="flex items-start gap-3">
+                <Network className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-amber-300">
+                    Dự án chưa có kiến trúc AI
+                  </p>
+                  <p className="mt-1 text-xs text-amber-200/70 leading-relaxed">
+                    AI cần phân tích cấu trúc dự án trước khi thực hiện bất kỳ task nào.
+                    Chạy phân tích kiến trúc một lần — AI sẽ tự động duy trì sau đó.
+                  </p>
+                  <Link
+                    href={`/projects/${params.projectId}/architecture`}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 transition-colors"
+                  >
+                    <Network className="h-3.5 w-3.5" />
+                    Đi đến Kiến trúc AI
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Two-column layout */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

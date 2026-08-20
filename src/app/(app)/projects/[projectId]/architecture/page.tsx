@@ -19,6 +19,7 @@ import { useOrgStore } from "@/stores/org.store";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const KNOWLEDGE_DOCUMENTS = [
+  "OVERVIEW.md",
   "PROJECT.md",
   "ARCHITECTURE.md",
   "MODULES.md",
