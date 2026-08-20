@@ -16,6 +16,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/settings/organization': 'Organization',
   '/settings/github': 'GitHub',
   '/settings/tokens': 'API Tokens',
+  '/system': 'Hệ thống & Tự học',
 }
 
 function getTitle(pathname: string): string {

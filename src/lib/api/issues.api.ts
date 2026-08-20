@@ -47,28 +47,28 @@ export interface Issue {
 export const issuesApi = {
   create: (projectId: string, organizationId: string, data: CreateIssueDto) =>
     apiClient.post<Issue>(
-      `/api/api/projects/${projectId}/issues?organizationId=${organizationId}`,
+      `/api/projects/${projectId}/issues?organizationId=${organizationId}`,
       data
     ),
 
   list: (projectId: string, organizationId: string) =>
     apiClient.get<Issue[]>(
-      `/api/api/projects/${projectId}/issues?organizationId=${organizationId}`
+      `/api/projects/${projectId}/issues?organizationId=${organizationId}`
     ),
 
   getById: (projectId: string, issueId: string, organizationId: string) =>
     apiClient.get<Issue>(
-      `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
+      `/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
     ),
 
   selectOption: (projectId: string, issueId: string, organizationId: string, optionId: string) =>
     apiClient.post<Issue>(
-      `/api/api/projects/${projectId}/issues/${issueId}/select-option?organizationId=${organizationId}`,
+      `/api/projects/${projectId}/issues/${issueId}/select-option?organizationId=${organizationId}`,
       { optionId }
     ),
 
   delete: (projectId: string, issueId: string, organizationId: string) =>
     apiClient.delete(
-      `/api/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
+      `/api/projects/${projectId}/issues/${issueId}?organizationId=${organizationId}`
     ),
 };

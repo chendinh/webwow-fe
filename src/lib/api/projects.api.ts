@@ -32,27 +32,27 @@ export interface HealthCheckResult {
 
 export const projectsApi = {
   create: (organizationId: string, data: CreateProjectDto) =>
-    apiClient.post(`/api/api/projects?organizationId=${organizationId}`, data),
+    apiClient.post(`/api/projects?organizationId=${organizationId}`, data),
 
   list: (organizationId: string) =>
-    apiClient.get(`/api/api/projects?organizationId=${organizationId}`),
+    apiClient.get(`/api/projects?organizationId=${organizationId}`),
 
   getById: (projectId: string, organizationId: string) =>
-    apiClient.get(`/api/api/projects/${projectId}?organizationId=${organizationId}`),
+    apiClient.get(`/api/projects/${projectId}?organizationId=${organizationId}`),
 
   getAnalysis: (projectId: string, organizationId: string) =>
     apiClient.get(
-      `/api/api/projects/${projectId}/analysis?organizationId=${organizationId}`
+      `/api/projects/${projectId}/analysis?organizationId=${organizationId}`
     ),
 
   reanalyze: (projectId: string, organizationId: string) =>
     apiClient.post(
-      `/api/api/projects/${projectId}/reanalyze?organizationId=${organizationId}`
+      `/api/projects/${projectId}/reanalyze?organizationId=${organizationId}`
     ),
 
   triggerHealthCheck: (projectId: string, organizationId: string) =>
     apiClient.post(
-      `/api/api/projects/${projectId}/health-check?organizationId=${organizationId}`
+      `/api/projects/${projectId}/health-check?organizationId=${organizationId}`
     ),
 
   getHealthCheck: (projectId: string, organizationId: string) =>
@@ -60,11 +60,11 @@ export const projectsApi = {
       status: string | null;
       result: HealthCheckResult | null;
       checkedAt: string | null;
-    }>(`/api/api/projects/${projectId}/health-check?organizationId=${organizationId}`),
+    }>(`/api/projects/${projectId}/health-check?organizationId=${organizationId}`),
 
   deployToMain: (projectId: string, organizationId: string) =>
     apiClient.post<{ prUrl: string; prNumber: number }>(
-      `/api/api/projects/${projectId}/deploy-to-main?organizationId=${organizationId}`
+      `/api/projects/${projectId}/deploy-to-main?organizationId=${organizationId}`
     ),
 
   listRepos: (organizationId: string) =>

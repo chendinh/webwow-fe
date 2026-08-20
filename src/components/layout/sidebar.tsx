@@ -10,6 +10,7 @@ import {
   LogOut,
   ChevronRight,
   MessageSquare,
+  ShieldAlert,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/consult', label: 'Quick Request', icon: MessageSquare },
   { href: '/projects', label: 'Projects', icon: FolderGit2 },
   { href: '/usage', label: 'Usage', icon: BarChart2 },
+  { href: '/system', label: 'Hệ thống', icon: ShieldAlert },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

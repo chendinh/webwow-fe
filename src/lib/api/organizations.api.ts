@@ -24,40 +24,40 @@ export interface UpdateOrganizationDto {
 
 export const organizationsApi = {
   create: (data: CreateOrganizationDto) =>
-    apiClient.post<Organization>("/api/api/organizations", data),
+    apiClient.post<Organization>("/api/organizations", data),
 
-  list: () => apiClient.get<Organization[]>("/api/api/organizations"),
+  list: () => apiClient.get<Organization[]>("/api/organizations"),
 
   getById: (organizationId: string) =>
-    apiClient.get<Organization>(`/api/api/organizations/${organizationId}`),
+    apiClient.get<Organization>(`/api/organizations/${organizationId}`),
 
   update: (organizationId: string, data: UpdateOrganizationDto) =>
-    apiClient.patch<Organization>(`/api/api/organizations/${organizationId}`, data),
+    apiClient.patch<Organization>(`/api/organizations/${organizationId}`, data),
 
   delete: (organizationId: string) =>
-    apiClient.delete(`/api/api/organizations/${organizationId}`),
+    apiClient.delete(`/api/organizations/${organizationId}`),
 
   getMembers: (organizationId: string) =>
-    apiClient.get(`/api/api/organizations/${organizationId}/members`),
+    apiClient.get(`/api/organizations/${organizationId}/members`),
 
   inviteMember: (
     organizationId: string,
     email: string,
     role: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER"
   ) =>
-    apiClient.post(`/api/api/organizations/${organizationId}/members`, { email, role }),
+    apiClient.post(`/api/organizations/${organizationId}/members`, { email, role }),
 
   updateMemberRole: (
     organizationId: string,
     memberId: string,
     role: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER"
   ) =>
-    apiClient.patch(`/api/api/organizations/${organizationId}/members/${memberId}`, {
+    apiClient.patch(`/api/organizations/${organizationId}/members/${memberId}`, {
       role,
     }),
 
   removeMember: (organizationId: string, memberId: string) =>
     apiClient.delete(
-      `/api/api/organizations/${organizationId}/members/${memberId}`
+      `/api/organizations/${organizationId}/members/${memberId}`
     ),
 };

@@ -48,18 +48,18 @@ export const aiTasksApi = {
   list: (organizationId: string, projectId?: string) => {
     const params = new URLSearchParams({ organizationId });
     if (projectId) params.set("projectId", projectId);
-    return apiClient.get<AITask[]>(`/api/api/ai-tasks?${params.toString()}`);
+    return apiClient.get<AITask[]>(`/api/ai-tasks?${params.toString()}`);
   },
 
   getById: (taskId: string, organizationId: string) =>
-    apiClient.get<AITask>(`/api/api/ai-tasks/${taskId}?organizationId=${organizationId}`),
+    apiClient.get<AITask>(`/api/ai-tasks/${taskId}?organizationId=${organizationId}`),
 
   getLogs: (taskId: string, organizationId: string) =>
-    apiClient.get<ActivityLog[]>(`/api/api/ai-tasks/${taskId}/logs?organizationId=${organizationId}`),
+    apiClient.get<ActivityLog[]>(`/api/ai-tasks/${taskId}/logs?organizationId=${organizationId}`),
 
   cancel: (taskId: string, organizationId: string) =>
-    apiClient.post<AITask>(`/api/api/ai-tasks/${taskId}/cancel?organizationId=${organizationId}`),
+    apiClient.post<AITask>(`/api/ai-tasks/${taskId}/cancel?organizationId=${organizationId}`),
 
   resume: (taskId: string, organizationId: string) =>
-    apiClient.post<AITask>(`/api/api/ai-tasks/${taskId}/resume?organizationId=${organizationId}`),
+    apiClient.post<AITask>(`/api/ai-tasks/${taskId}/resume?organizationId=${organizationId}`),
 };
