@@ -5,9 +5,6 @@
 
 | Package | Declared Version |
 |---|---|
-| next | 14.2.3 |
-| react | ^18.3.1 |
-| react-dom | ^18.3.1 |
 | @radix-ui/react-dialog | ^1.0.5 |
 | @radix-ui/react-dropdown-menu | ^2.0.6 |
 | @radix-ui/react-label | ^2.0.2 |
@@ -15,10 +12,13 @@
 | @radix-ui/react-slot | ^1.0.2 |
 | @radix-ui/react-tabs | ^1.0.4 |
 | @radix-ui/react-toast | ^1.1.5 |
-| lucide-react | ^0.395.0 |
-| motion | ^13.1.0 |
 | class-variance-authority | ^0.7.0 |
 | clsx | ^2.1.1 |
+| lucide-react | ^0.395.0 |
+| motion | ^13.1.0 |
+| next | 14.2.3 |
+| react | ^18.3.1 |
+| react-dom | ^18.3.1 |
 | tailwind-merge | ^2.3.0 |
 
 ### HTTP Client
@@ -26,19 +26,28 @@
 | Package | Declared Version |
 |---|---|
 | axios | ^1.7.2 |
-| @tanstack/react-query | ^5.40.0 |
 
 ### Auth
 
 | Package | Declared Version |
 |---|---|
-| zod | ^3.23.8 |
 | @hookform/resolvers | ^3.6.0 |
-| react-hook-form | ^7.52.0 |
+| zod | ^3.23.8 |
 
 ### Other
 
 | Package | Declared Version |
 |---|---|
+| @tanstack/react-query | ^5.40.0 |
 | date-fns | ^3.6.0 |
+| react-hook-form | ^7.52.0 |
 | zustand | ^4.5.2 |
+
+---
+
+> **Notes**
+> - `@hookform/resolvers` and `zod` are listed under **Auth** as they are primarily used for form validation and schema-based input sanitisation, which commonly serves authentication and authorisation flows.
+> - `@tanstack/react-query` is listed under **Other** as it is a server-state/data-fetching library and does not fit a more specific category above.
+> - `zustand` is listed under **Other** as it is a client-side state management library.
+> - `react-hook-form` is listed under **Other** as it is a form management library.
+> - No ORM/Database, Queue, or Testing production dependencies were declared in `package.json`.

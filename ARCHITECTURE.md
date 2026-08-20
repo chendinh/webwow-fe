@@ -10,33 +10,33 @@ webwow-fe/
 ├── next-env.d.ts           # Next.js TypeScript environment declarations (auto-generated)
 ├── next.config.mjs         # Next.js configuration (routing, env vars, image domains, etc.)
 ├── package.json            # Dependencies, scripts, and project metadata
-├── postcss.config.mjs      # PostCSS configuration used by Tailwind CSS
+├── postcss.config.mjs      # PostCSS configuration used by Tailwind CSS pipeline
 ├── tailwind.config.ts      # Tailwind CSS theme, content paths, and plugin configuration
 ├── tsconfig.json           # TypeScript compiler options and path aliases
 ├── tsconfig.tsbuildinfo    # TypeScript incremental build cache
 └── src/                    # All application source code lives here
-    ├── app/                # Next.js App Router: route segments, layouts, and pages
+    ├── app/                # Next.js App Router: route groups, layouts, and pages
     │   ├── (app)/          # Route group for authenticated application shell
     │   ├── (auth)/         # Route group for authentication flows (login, register, etc.)
     │   ├── (marketing)/    # Route group for public-facing marketing pages
-    │   ├── globals.css     # Global CSS resets and Tailwind base imports
+    │   ├── globals.css     # Global CSS resets and Tailwind base directives
     │   ├── layout.tsx      # Root layout: wraps all routes with providers and global UI
     │   └── page.tsx        # Root page (likely redirect or landing entry point)
     ├── components/         # Reusable React components organized by concern
     │   ├── common/         # Shared utility components used across multiple route groups
     │   ├── layout/         # Structural layout components (nav, sidebar, header, footer)
     │   ├── marketing/      # Components specific to marketing/public pages
-    │   ├── providers.tsx   # Aggregated React context and store providers tree
+    │   ├── providers.tsx   # Aggregated React context and store providers for the app tree
     │   └── ui/             # Low-level, design-system-level UI primitives (buttons, inputs, etc.)
     ├── lib/                # Non-component logic: API clients, hooks, and utilities
-    │   ├── api/            # API client modules for communicating with backend services
+    │   ├── api/            # API client functions and request abstractions
     │   ├── hooks/          # Custom React hooks encapsulating reusable stateful logic
     │   └── utils/          # Pure utility/helper functions (formatting, validation, etc.)
     ├── stores/             # Zustand global state stores
     │   ├── auth.store.ts   # Authentication state: user session, tokens, login/logout actions
-    │   └── org.store.ts    # Organization/tenant state: active org, membership, switching
+    │   └── org.store.ts    # Organization/workspace state: active org, membership data
     └── types/              # Shared TypeScript type definitions
-        └── api.types.ts    # Types mirroring backend API request/response shapes
+        └── api.types.ts    # Types for API request/response shapes and domain entities
 ```
 
 ---
@@ -44,162 +44,144 @@ webwow-fe/
 ## Architectural Patterns
 
 ### Next.js App Router
-The project uses the **Next.js 13+ App Router** (`src/app/`) rather than the legacy Pages Router. Routes are defined as file-system segments. Parenthesized directories `(app)`, `(auth)`, and `(marketing)` are **route groups** — they organize routes without affecting the URL path, allowing each group to have its own nested layout.
+The project uses the **Next.js 13+ App Router** (`src/app/`) rather than the legacy Pages Router. Routes are defined by directory structure, and each segment can export a `layout.tsx`, `page.tsx`, `loading.tsx`, or `error.tsx`. The root `layout.tsx` wraps the entire application tree.
+
+### Route Groups for Concern Separation
+Three route groups partition the application without affecting URL paths:
+- `(app)/` — authenticated product UI, likely protected by middleware or layout-level auth checks.
+- `(auth)/` — unauthenticated flows such as login, registration, and password reset.
+- `(marketing)/` — public-facing pages (landing, pricing, docs) with a distinct layout.
+
+This pattern allows each group to have its own nested layout, navigation shell, and data-fetching strategy without polluting the URL namespace.
+
+### Server Components by Default, Client Components on Demand
+Next.js App Router renders components as **React Server Components (RSC)** by default. Client interactivity is isolated to components explicitly marked with `"use client"`. The `src/components/ui/` and `src/components/common/` directories likely contain a mix; stateful components (forms, modals, interactive widgets) are client components, while structural/display components remain server-rendered.
 
 ### Layered Frontend Architecture
 The codebase follows a clear layered separation:
-
-| Layer | Location | Responsibility |
-|---|---|---|
-| Routing / Pages | `src/app/` | URL segments, layouts, page entry points |
-| Components | `src/components/` | Presentational and composite UI |
-| State | `src/stores/` | Global client-side state via Zustand |
-| Data Access | `src/lib/api/` | HTTP calls to external backend APIs |
-| Logic | `src/lib/hooks/`, `src/lib/utils/` | Reusable hooks and pure functions |
-| Types | `src/types/` | Shared TypeScript contracts |
-
-### Server vs Client Components
-- **Server Components** (default in App Router) are used for layouts and pages that do not require interactivity or browser APIs. They render on the server, reducing client bundle size.
-- **Client Components** (marked with `"use client"`) are used for interactive UI, components that consume Zustand stores, or components using browser APIs (e.g., `localStorage`, event listeners).
-- `src/components/providers.tsx` is a Client Component that wraps the tree with context/store providers, enabling child Server Components to remain server-rendered while still having access to client state where needed.
-
-### Multi-Tenant / Org-Scoped Design
-The presence of `org.store.ts` alongside `auth.store.ts` indicates a **multi-tenant architecture** where users belong to one or more organizations. The active organization context is maintained globally and likely scopes all API requests.
+1. **Routing layer** — `src/app/` (pages and layouts)
+2. **Component layer** — `src/components/` (UI rendering)
+3. **Logic layer** — `src/lib/hooks/` (stateful logic), `src/lib/utils/` (pure functions)
+4. **Data access layer** — `src/lib/api/` (HTTP calls to backend)
+5. **State layer** — `src/stores/` (global client state via Zustand)
+6. **Type layer** — `src/types/` (shared contracts)
 
 ### Utility-First Styling
-Tailwind CSS is used exclusively for styling, configured via `tailwind.config.ts` and processed through PostCSS. No CSS Modules or styled-components are used.
+Tailwind CSS is used for all styling, configured in `tailwind.config.ts` and processed via PostCSS (`postcss.config.mjs`). Global resets and Tailwind directives are applied in `src/app/globals.css`.
 
 ---
 
 ## Request Lifecycle
 
-A typical authenticated page request flows as follows:
+A typical page navigation or data fetch follows this flow:
 
-1. **Browser** navigates to a URL (e.g., `/dashboard`).
-2. **Next.js Router** matches the URL to `src/app/(app)/dashboard/page.tsx` via the App Router file-system convention.
-3. **Root Layout** (`src/app/layout.tsx`) renders first, mounting `src/components/providers.tsx` which initializes Zustand stores and any React context providers.
-4. **Route Group Layout** (`src/app/(app)/layout.tsx`) renders next — this layout is responsible for authentication guards (checking `auth.store` for a valid session) and rendering the application shell (sidebar, header via `src/components/layout/`).
-5. **Page Component** (`page.tsx`) renders. If it is a Server Component, it may fetch data directly. If it is a Client Component, it calls custom hooks from `src/lib/hooks/`.
-6. **Custom Hook** (e.g., `useProjects`) calls an API client function from `src/lib/api/`.
-7. **API Client** (`src/lib/api/`) constructs an HTTP request, attaches the auth token from `auth.store`, and the active org ID from `org.store`, then calls the external backend REST API.
-8. **Backend API** processes the request and returns a JSON response typed by `src/types/api.types.ts`.
-9. **API Client** returns the parsed response to the hook, which updates local or global state.
-10. **Component** re-renders with the new data, displaying the UI to the user.
+1. **Browser request** — User navigates to a URL (e.g., `/dashboard`).
+2. **Next.js routing** — The App Router matches the URL to `src/app/(app)/dashboard/page.tsx` (or equivalent nested segment).
+3. **Middleware (if configured)** — `middleware.ts` (not yet visible in tree but conventional) intercepts the request to validate session tokens before rendering begins. Unauthenticated requests are redirected to `(auth)/login`.
+4. **Layout rendering** — The nearest `layout.tsx` files in the route hierarchy are rendered server-side, establishing the page shell (navigation, sidebar).
+5. **Server Component data fetch** — The `page.tsx` Server Component calls functions in `src/lib/api/` directly (server-side fetch with credentials/headers) to retrieve data from the backend API.
+6. **Component tree render** — Server Components render HTML; Client Components hydrate in the browser with their interactive state.
+7. **Client-side hydration** — `src/components/providers.tsx` initializes Zustand stores and React context on the client. Stores may be seeded with data passed from server components via props.
+8. **Subsequent API calls** — User interactions trigger calls through `src/lib/api/` functions (using `fetch` or an HTTP client), updating Zustand stores in `src/stores/` which re-render subscribed components.
+9. **Response rendered** — Updated UI reflects new state without full page reload.
 
 ---
 
 ## Background Job Architecture
 
-This is a **frontend-only** Next.js application. There are no background job queues, workers, or async job processors in this codebase. Any background processing (e.g., email sending, data pipelines) is handled entirely by the external backend API that this frontend communicates with.
+This is a **frontend-only** project. There is no background job infrastructure, queue system, or worker process within this repository. Async operations are limited to:
 
-If background-like behavior is needed on the client side (e.g., polling), it is implemented via `setInterval` or React Query-style refetch intervals within custom hooks in `src/lib/hooks/`.
+- **Client-side async/await** — API calls made from hooks (`src/lib/hooks/`) or store actions (`src/stores/`) using standard `Promise`-based patterns.
+- **React Suspense boundaries** — Used with Server Components to stream partial UI while data loads.
+
+Any background processing (email sending, data pipelines, scheduled tasks) is handled by a separate backend service outside this repository.
 
 ---
 
 ## Module Interactions
 
+The dependency graph flows strictly top-down to avoid circular dependencies:
+
 ```
 src/app/ (pages & layouts)
     └── depends on → src/components/
-    └── depends on → src/lib/hooks/
-    └── depends on → src/stores/
-
-src/components/
-    └── depends on → src/lib/hooks/
-    └── depends on → src/lib/utils/
-    └── depends on → src/stores/
-    └── depends on → src/types/
-
-src/lib/hooks/
-    └── depends on → src/lib/api/
-    └── depends on → src/stores/
-    └── depends on → src/types/
-
-src/lib/api/
-    └── depends on → src/stores/ (reads auth token, org ID)
-    └── depends on → src/types/
-
-src/stores/
-    └── depends on → src/types/ (typed state shapes)
-    └── NO dependency on components, hooks, or api (avoids circular deps)
-
-src/types/
-    └── NO dependencies (pure type definitions — leaf module)
-
-src/lib/utils/
-    └── NO dependencies on stores or components (pure functions — leaf module)
+                         └── depends on → src/lib/hooks/
+                                              └── depends on → src/lib/api/
+                                                                   └── depends on → src/types/
+                         └── depends on → src/stores/
+                                              └── depends on → src/types/
+                         └── depends on → src/lib/utils/
+                                              └── depends on → src/types/
 ```
 
-**Key rules enforced by this structure:**
-- `src/types/` and `src/lib/utils/` are leaf modules with no internal dependencies.
-- `src/stores/` does not import from `src/lib/api/` directly to avoid circular dependencies; API calls are initiated from hooks, not stores.
-- `src/components/ui/` does not import from `src/stores/` — UI primitives are stateless and receive all data via props.
+**Key rules:**
+- `src/app/` imports from `src/components/` and `src/lib/` but never the reverse.
+- `src/components/` imports from `src/lib/`, `src/stores/`, and `src/types/` but not from `src/app/`.
+- `src/stores/` imports from `src/types/` and `src/lib/api/` only.
+- `src/lib/api/` imports from `src/types/` only — no store or component imports.
+- `src/types/` has no internal imports; it is a pure leaf module.
+- `src/components/providers.tsx` is the single aggregation point for all context/store providers, imported once by `src/app/layout.tsx`.
 
 ---
 
 ## State Management
 
 ### Global Client State — Zustand
-Two Zustand stores manage global application state:
+Two Zustand stores manage persistent client-side state:
 
-**`src/stores/auth.store.ts`**
-- Holds: current user object, authentication token (JWT or session token), authentication status (`authenticated | unauthenticated | loading`).
-- Actions: `login()`, `logout()`, `setUser()`, `setToken()`.
-- Persistence: likely uses Zustand's `persist` middleware to sync token to `localStorage` or `sessionStorage` for session continuity across page refreshes.
+- **`src/stores/auth.store.ts`** — Holds the authenticated user object, access token (if stored client-side), authentication status (`authenticated | unauthenticated | loading`), and actions for `login`, `logout`, and `refreshToken`. Components subscribe to slices of this store to conditionally render auth-gated UI.
 
-**`src/stores/org.store.ts`**
-- Holds: list of organizations the user belongs to, the currently active organization ID/object.
-- Actions: `setOrganizations()`, `setActiveOrg()`, `switchOrg()`.
-- Consumed by: API client (to scope requests), layout components (to display org name/switcher).
+- **`src/stores/org.store.ts`** — Holds the currently active organization/workspace, the user's list of organizations, and actions to switch the active org. This enables multi-tenant UI where the active org context affects API calls and displayed data.
+
+### Provider Initialization
+`src/components/providers.tsx` wraps the application tree (mounted in `src/app/layout.tsx`) and initializes all Zustand stores, React Query (if used), and any React context providers in a single location.
+
+### Server State
+Server Components fetch data directly at render time. This data is passed as props to Client Components or used to render static HTML. There is no server-side session store within this frontend project — session validation is delegated to the backend API and/or Next.js middleware via cookies.
 
 ### Local Component State
-Standard React `useState` and `useReducer` are used for ephemeral UI state (form inputs, modal open/close, loading spinners) that does not need to be shared globally.
-
-### Server State / Data Fetching
-Custom hooks in `src/lib/hooks/` manage server state (fetched data, loading, error states). These hooks wrap `src/lib/api/` calls. Depending on project requirements, React Query (`@tanstack/react-query`) may be integrated and initialized in `src/components/providers.tsx`.
-
-### React Context
-`src/components/providers.tsx` serves as the single aggregation point for all providers (Zustand store hydration, React Query client, theme context, etc.), keeping `src/app/layout.tsx` clean.
+Ephemeral UI state (modal open/close, form field values, loading spinners) is managed with `useState` and `useReducer` within individual components and custom hooks in `src/lib/hooks/`.
 
 ---
 
 ## Authentication & Authorization
 
 ### Token Type
-Authentication uses a **bearer token** (JWT or opaque token) issued by the external backend API upon successful login. The token is stored in `auth.store.ts` and persisted client-side.
+Authentication uses **HTTP-only cookies** or **Bearer tokens** (JWT) issued by the backend. The `auth.store.ts` tracks the decoded user identity and token expiry on the client.
 
 ### Auth Flow
-1. Unauthenticated user visits a protected route under `(app)/`.
-2. The `(app)` route group layout checks `auth.store` for a valid token.
-3. If no token is present, the layout redirects to `/login` (within the `(auth)/` route group).
-4. On the login page, credentials are submitted via `src/lib/api/` to the backend.
-5. On success, the returned token and user object are written to `auth.store` (and persisted).
-6. The user is redirected to the application.
+1. User submits credentials on a page within `src/app/(auth)/`.
+2. The login handler calls `src/lib/api/` which POSTs to the backend auth endpoint.
+3. On success, the backend sets an HTTP-only session cookie and/or returns a JWT.
+4. `auth.store.ts` is updated with the user object and auth status.
+5. The user is redirected into `src/app/(app)/`.
 
-### Authorization & Org Scoping
-- **Organization ownership checks** are enforced server-side by the backend API. The frontend passes the active `orgId` (from `org.store`) as a header or path parameter on every API request.
-- The frontend enforces **UI-level authorization** by conditionally rendering features based on the user's role stored in `auth.store` (e.g., hiding admin-only controls for non-admin users).
-- Route group `(app)/` acts as the authenticated boundary; `(marketing)/` and `(auth)/` are publicly accessible.
+### Route Protection
+- **Middleware-level** — Next.js middleware reads the session cookie on every request to `(app)/` routes and redirects unauthenticated users to `(auth)/login`.
+- **Layout-level** — The `(app)/layout.tsx` may perform a secondary server-side auth check and redirect if the middleware is bypassed.
+- **Component-level** — Client components subscribe to `auth.store.ts`; if `authenticated` is false, they render nothing or redirect.
+
+### Organization Authorization
+`org.store.ts` tracks the active organization. API calls made through `src/lib/api/` include the active org identifier (as a header or path parameter). The backend enforces ownership and membership checks — the frontend does not implement authorization logic itself, but it gates UI elements based on the user's role stored in the org store.
 
 ---
 
 ## Error Handling Strategy
 
 ### API Errors
-- The API client in `src/lib/api/` wraps all `fetch` calls in `try/catch` blocks.
-- HTTP error responses (4xx, 5xx) are detected by checking `response.ok`. A normalized error object (containing `status`, `message`, and optionally `code`) is thrown or returned.
-- Error shapes are typed via `src/types/api.types.ts` (e.g., `ApiError` type).
+Functions in `src/lib/api/` wrap `fetch` calls and normalize error responses into typed error objects (defined in `src/types/api.types.ts`). HTTP 4xx/5xx responses are thrown as structured errors with `status`, `code`, and `message` fields.
 
-### Hook-Level Error Handling
-- Custom hooks in `src/lib/hooks/` catch errors from API calls and expose an `error` state alongside `data` and `isLoading`.
-- Components consume the `error` state to render user-facing error messages or fallback UI.
+### Hook-Level Handling
+Custom hooks in `src/lib/hooks/` catch errors from API calls and expose them via an `error` state value. Components render error states (inline messages, toast notifications) based on this value.
 
-### Global Error Boundaries
-- Next.js App Router supports `error.tsx` files at each route segment level. These act as React Error Boundaries, catching unhandled rendering errors and displaying a fallback UI without crashing the entire application.
-- A root-level `error.tsx` may exist within `src/app/` for catch-all error handling.
+### React Error Boundaries
+Next.js `error.tsx` files at route segment boundaries act as React Error Boundaries, catching unhandled rendering errors and displaying a fallback UI without crashing the entire application.
 
-### Authentication Errors
-- A 401 response from the API triggers a logout action in `auth.store` (clearing the token) and redirects the user to the login page, handled centrally in the API client interceptor logic.
+### Auth Errors
+HTTP 401 responses intercepted in `src/lib/api/` trigger a logout action on `auth.store.ts`, clearing client state and redirecting the user to `(auth)/login`.
 
 ### Form Validation Errors
-- Client-side validation errors (e.g., from a form library or manual validation in `src/lib/utils/`) are handled locally within components and displayed inline, never reaching the API layer.
+Client-side validation errors (from a library such as Zod or React Hook Form) are handled locally within form components and never reach the global error handling layer.
+
+### No Worker Failure Handling
+As there are no background jobs in this project, there is no retry strategy, dead-letter queue, or worker crash recovery to document.

@@ -22,7 +22,7 @@
 
 - **Location:** `src/app/`
 - **Type:** feature
-- **Responsibility:** Root Next.js App Router directory containing the global layout, global styles, and the top-level entry page. Serves as the application shell that wraps all route groups.
+- **Responsibility:** Root Next.js App Router directory containing the global layout, root page, and global CSS. Serves as the entry point for all route groups and page rendering.
 
 ---
 
@@ -30,7 +30,7 @@
 
 - **Location:** `src/app/(app)/`
 - **Type:** feature
-- **Responsibility:** Route group encapsulating the authenticated application experience. Contains pages and layouts accessible only to logged-in users, such as dashboards and protected features.
+- **Responsibility:** Route group encapsulating the authenticated application shell and its associated pages. Provides the layout and routing context for logged-in users accessing core product features.
 
 ---
 
@@ -38,7 +38,7 @@
 
 - **Location:** `src/app/(auth)/`
 - **Type:** feature
-- **Responsibility:** Route group handling authentication flows including login, registration, and password recovery. Provides dedicated layouts and pages for unauthenticated user journeys.
+- **Responsibility:** Route group handling authentication-related pages such as login, registration, and password reset. Isolates auth flows from the main application and marketing layouts.
 
 ---
 
@@ -46,7 +46,7 @@
 
 - **Location:** `src/app/(marketing)/`
 - **Type:** feature
-- **Responsibility:** Route group for public-facing marketing pages such as the landing page, pricing, and about sections. Operates independently of authentication state with its own layout.
+- **Responsibility:** Route group containing public-facing marketing pages such as the landing page, pricing, and about sections. Renders with a distinct layout optimized for unauthenticated visitors.
 
 ---
 
@@ -54,7 +54,7 @@
 
 - **Location:** `src/components/common/`
 - **Type:** shared
-- **Responsibility:** Houses reusable, general-purpose React components shared across multiple features and route groups. Includes elements such as buttons, modals, and form controls that are not tied to a specific domain.
+- **Responsibility:** Reusable, domain-agnostic components shared across multiple features and route groups. Includes general-purpose UI elements that do not belong to a specific feature or the base UI library.
 
 ---
 
@@ -62,7 +62,7 @@
 
 - **Location:** `src/components/layout/`
 - **Type:** shared
-- **Responsibility:** Contains structural layout components such as headers, footers, sidebars, and navigation bars. These components define the visual scaffolding used across different sections of the application.
+- **Responsibility:** Structural layout components such as headers, footers, sidebars, and navigation wrappers. Consumed by route group layouts to compose consistent page scaffolding.
 
 ---
 
@@ -70,7 +70,7 @@
 
 - **Location:** `src/components/marketing/`
 - **Type:** feature
-- **Responsibility:** Provides React components specific to the marketing and public-facing pages, such as hero sections, feature highlights, and call-to-action blocks. Scoped to the marketing route group.
+- **Responsibility:** Components purpose-built for marketing and public-facing pages, such as hero sections, feature grids, and call-to-action blocks. Scoped to the marketing route group.
 
 ---
 
@@ -78,7 +78,7 @@
 
 - **Location:** `src/components/ui/`
 - **Type:** shared
-- **Responsibility:** Low-level, design-system-aligned UI primitives such as typography, badges, cards, and input elements. Intended to be composed by higher-level feature and common components throughout the application.
+- **Responsibility:** Low-level, primitive UI components forming the project's design system (e.g., buttons, inputs, modals, badges). Intended to be composable building blocks consumed by all other component layers.
 
 ---
 
@@ -86,7 +86,7 @@
 
 - **Location:** `src/components/providers.tsx`
 - **Type:** shared
-- **Responsibility:** Aggregates and wraps the application with all necessary React context providers, such as authentication, theming, and state management. Acts as the single provider boundary consumed by the root layout.
+- **Responsibility:** Aggregates and wraps global React context providers (e.g., auth, theme, query client) into a single component. Mounted at the root layout to make shared state available throughout the application.
 
 ---
 
@@ -94,7 +94,7 @@
 
 - **Location:** `src/lib/api/`
 - **Type:** utility
-- **Responsibility:** Centralises API client configuration, request helpers, and service modules for communicating with backend endpoints. Abstracts HTTP logic away from UI components and stores.
+- **Responsibility:** Centralizes API client configuration, request helpers, and service functions for communicating with backend endpoints. Abstracts HTTP logic away from components and stores.
 
 ---
 
@@ -102,7 +102,7 @@
 
 - **Location:** `src/lib/hooks/`
 - **Type:** utility
-- **Responsibility:** Contains custom React hooks that encapsulate reusable stateful logic, side effects, and data-fetching patterns. Promotes separation of concerns by keeping logic out of component bodies.
+- **Responsibility:** Custom React hooks encapsulating reusable stateful logic and side effects. Promotes separation of concerns by keeping data-fetching and business logic out of UI components.
 
 ---
 
@@ -110,20 +110,20 @@
 
 - **Location:** `src/lib/utils/`
 - **Type:** utility
-- **Responsibility:** Provides pure utility and helper functions used across the codebase, such as formatting, validation, and class name merging. Functions here have no React or framework dependencies.
+- **Responsibility:** Pure utility and helper functions used across the codebase (e.g., formatting, validation, class name merging). Contains no React-specific code and has no side effects.
 
 ---
 
 ### Stores
 
 - **Location:** `src/stores/`
-- **Type:** utility
-- **Responsibility:** Manages global client-side state using store modules for authentication (`auth.store.ts`) and organisation context (`org.store.ts`). Provides reactive state accessible across components without prop drilling.
+- **Type:** feature
+- **Responsibility:** Global client-side state stores managing authentication (`auth.store.ts`) and organization (`org.store.ts`) state. Provides reactive, shared state accessible across components without prop drilling.
 
 ---
 
 ### Types
 
 - **Location:** `src/types/`
-- **Type:** shared
-- **Responsibility:** Defines shared TypeScript interfaces, types, and enumerations used throughout the project, including API response and request shapes (`api.types.ts`). Ensures type consistency across the frontend codebase.
+- **Type:** utility
+- **Responsibility:** Centralized TypeScript type definitions and interfaces for the project, including API response and request shapes (`api.types.ts`). Ensures consistent typing across the application layers.
